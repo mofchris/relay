@@ -133,6 +133,9 @@ npm run preview
    campaign, the second-price clearing CPM, the predicted CTR, the latency, the decision
    trace, and the Redis/Kafka/BigQuery flags. The KPI strip and **Recent deliveries**
    update on every serve, and persist (they are stored server-side per account).
+   - Click any item in **Recent deliveries** to inspect that delivery's decision and
+     metrics, with a comparison of its clearing CPM, CTR, and latency against the
+     average for its audience segment.
 4. **Sign out** from the console header; visiting `/app` again redirects to `/auth`.
 
 Things to try:

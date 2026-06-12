@@ -25,7 +25,7 @@ import {
 import type { AdRequest, Country, DeliveryResponse, Device, Placement, Segment } from "@/lib/types";
 
 interface AdRequestFormProps {
-  onResult: (response: DeliveryResponse) => void;
+  onResult: (response: DeliveryResponse, request: AdRequest) => void;
 }
 
 const DEFAULTS: AdRequest = {
@@ -58,7 +58,7 @@ export function AdRequestForm({ onResult }: AdRequestFormProps) {
     setError(null);
     try {
       const response = await serveAd(request);
-      onResult(response);
+      onResult(response, request);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong serving the request. Please try again.");
     } finally {

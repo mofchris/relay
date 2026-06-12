@@ -14,10 +14,11 @@ import {
 import { ModeToggle } from "@/components/mode-toggle";
 import { AdRequestForm } from "@/components/ad-request-form";
 import { DeliveryCard } from "@/components/delivery-card";
+import type { DeliveryComparison } from "@/components/delivery-card";
 import { RecentDeliveries } from "@/components/recent-deliveries";
 import { listDeliveries } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
-import type { DeliveryResponse, SavedDeliveryRecord } from "@/lib/types";
+import type { AdRequest, DeliveryResponse, SavedDeliveryRecord } from "@/lib/types";
 
 interface Kpis {
   total: number;
@@ -30,43 +31,79 @@ function computeKpis(records: SavedDeliveryRecord[]): Kpis {
   if (records.length === 0) return { total: 0, fillRate: 0, avgLatency: 0, revenue: 0 };
   const filled = records.filter((r) => r.decision.filled);
   const latency = records.reduce((sum, r) => sum + r.decision.latency_ms, 0) / records.length;
-  // Each delivery is one impression; revenue = clearing CPM / 1,000.
   const revenue = filled.reduce((sum, r) => sum + r.decision.clearing_price_cpm / 1000, 0);
+  return { total: records.length, fillRate: filled.length / records.length, avgLatency: latency, revenue };
+}
+
+/** Average metrics across other deliveries in the same segment as `selected`. */
+function buildComparison(records: SavedDeliveryRecord[], selected: SavedDeliveryRecord): DeliveryComparison {
+  const peers = records.filter((r) => r.request.segment === selected.request.segment && r.id !== selected.id);
+  const avg = (f: (r: SavedDeliveryRecord) => number) => peers.reduce((s, r) => s + f(r), 0) / peers.length;
   return {
-    total: records.length,
-    fillRate: filled.length / records.length,
-    avgLatency: latency,
-    revenue,
+    segment: selected.request.segment,
+    peerCount: peers.length,
+    avgClearing: peers.length ? avg((r) => r.decision.clearing_price_cpm) : 0,
+    avgCtr: peers.length ? avg((r) => r.decision.predicted_ctr) : 0,
+    avgLatency: peers.length ? avg((r) => r.decision.latency_ms) : 0,
   };
 }
 
 export function ConsolePage() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [result, setResult] = useState<DeliveryResponse | null>(null);
+  const [records, setRecords] = useState<SavedDeliveryRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [refreshSignal, setRefreshSignal] = useState(0);
-  const [kpis, setKpis] = useState<Kpis>({ total: 0, fillRate: 0, avgLatency: 0, revenue: 0 });
   const resultRef = useRef<HTMLDivElement>(null);
-
-  function handleSignOut() {
-    logout();
-    navigate("/");
-  }
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
     listDeliveries()
-      .then((rows) => active && setKpis(computeKpis(rows)))
-      .catch(() => active && setKpis(computeKpis([])));
+      .then((rows) => {
+        if (!active) return;
+        setRecords(rows);
+        setSelectedId((prev) => prev ?? rows[0]?.id ?? null);
+      })
+      .catch(() => active && setRecords([]))
+      .finally(() => active && setLoading(false));
     return () => {
       active = false;
     };
   }, [refreshSignal]);
 
-  function handleResult(response: DeliveryResponse) {
-    setResult(response);
-    setRefreshSignal((n) => n + 1);
+  const selected = records.find((r) => r.id === selectedId) ?? null;
+  const kpis = computeKpis(records);
+  const comparison = selected ? buildComparison(records, selected) : null;
+
+  function scrollToResult() {
     requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  function handleResult(response: DeliveryResponse, request: AdRequest) {
+    // Show it immediately, then refetch to stay in sync with the server.
+    const record: SavedDeliveryRecord = {
+      id: response.request_id,
+      created_at: new Date().toISOString(),
+      request,
+      decision: response.decision,
+      pipeline: response.pipeline,
+    };
+    setRecords((prev) => [record, ...prev]);
+    setSelectedId(record.id);
+    setRefreshSignal((n) => n + 1);
+    scrollToResult();
+  }
+
+  function handleSelect(record: SavedDeliveryRecord) {
+    setSelectedId(record.id);
+    scrollToResult();
+  }
+
+  function handleSignOut() {
+    logout();
+    navigate("/");
   }
 
   return (
@@ -114,10 +151,10 @@ export function ConsolePage() {
               </CardContent>
             </Card>
 
-            {result && (
+            {selected && (
               <div ref={resultRef} className="scroll-mt-20">
                 <h2 className="mb-3 text-lg font-semibold">Delivery decision</h2>
-                <DeliveryCard response={result} />
+                <DeliveryCard record={selected} comparison={comparison} />
               </div>
             )}
           </div>
@@ -125,7 +162,8 @@ export function ConsolePage() {
           <aside className="lg:col-span-1">
             <div className="lg:sticky lg:top-20">
               <h2 className="mb-3 text-lg font-semibold">Recent deliveries</h2>
-              <RecentDeliveries refreshSignal={refreshSignal} />
+              <p className="mb-3 text-xs text-muted-foreground">Select any delivery to inspect its decision and compare it.</p>
+              <RecentDeliveries records={records} loading={loading} selectedId={selectedId} onSelect={handleSelect} />
             </div>
           </aside>
         </div>
