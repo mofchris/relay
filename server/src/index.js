@@ -20,7 +20,11 @@ import { serveAd } from "./auction.js";
 
 const PORT = Number(process.env.PORT || 8787);
 const JWT_SECRET = process.env.JWT_SECRET || "relay-dev-secret-change-me";
-const ORIGIN = process.env.CORS_ORIGIN || "http://localhost:5173";
+// Comma-separated allow-list, e.g. "https://mofchris.github.io,http://localhost:5173".
+const ORIGINS = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 const PLACEMENTS = new Set(["feed", "sidebar", "banner", "interstitial", "video"]);
 const DEVICES = new Set(["mobile", "desktop", "tablet", "ctv"]);
@@ -28,7 +32,7 @@ const SEGMENTS = new Set(["tech", "fitness", "finance", "travel", "shopping", "g
 const COUNTRIES = new Set(["US", "UK", "CA", "DE", "IN", "BR", "AU", "JP"]);
 
 const app = express();
-app.use(cors({ origin: ORIGIN }));
+app.use(cors({ origin: ORIGINS }));
 app.use(express.json());
 
 // --- helpers ---------------------------------------------------------------
@@ -135,6 +139,6 @@ app.listen(PORT, () => {
   if (JWT_SECRET === "relay-dev-secret-change-me") {
     console.warn("[relay] Using the default dev JWT secret. Set JWT_SECRET in production.");
   }
-  console.log(`[relay] API listening on http://localhost:${PORT} (CORS origin: ${ORIGIN})`);
+  console.log(`[relay] API listening on port ${PORT} (CORS origins: ${ORIGINS.join(", ")})`);
   console.log("[relay] Demo account: demo@relay.dev / demo1234");
 });

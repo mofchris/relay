@@ -17,9 +17,13 @@ function RequireAuth({ children }: { children: ReactNode }) {
   return children;
 }
 
+// Vite injects BASE_URL ("/" in dev, "/relay/" for the Pages build); React
+// Router needs it without a trailing slash so deep links resolve correctly.
+const basename = import.meta.env.BASE_URL.replace(/\/+$/, "");
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={basename}>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/auth" element={<AuthPage />} />

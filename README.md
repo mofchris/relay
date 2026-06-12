@@ -194,6 +194,30 @@ Server (environment variables, all optional — see `server/.env.example`):
 
 Request/response shapes are defined in `src/lib/types.ts`.
 
+## Deployment
+
+The frontend is hosted on **GitHub Pages** and the API on **Render** (both free tier).
+GitHub Pages can only serve static files, so the Node + SQLite API runs on Render.
+
+**Frontend — GitHub Pages**
+- `.github/workflows/deploy-pages.yml` builds with `base=/relay/` and deploys on every push
+  to `main`. Enable it once: repo **Settings → Pages → Source: GitHub Actions**.
+- Served at `https://mofchris.github.io/relay/`.
+
+**API — Render**
+- `render.yaml` defines the API service. In Render: **New → Blueprint → pick this repo → Apply**.
+- Render builds and runs `/server`. The free tier has no persistent disk, so SQLite re-seeds on
+  each deploy (the demo account and seeded history always come back), and the service sleeps
+  after ~15 min idle (first request then takes ~30s to wake).
+
+**Wire them together**
+1. Deploy the API on Render and copy its URL (e.g. `https://relay-api.onrender.com`).
+2. Repo **Settings → Secrets and variables → Actions → Variables** → add `VITE_API_URL` set to
+   that Render URL.
+3. Re-run the Pages workflow (**Actions → Deploy frontend to GitHub Pages → Run workflow**) so
+   the frontend is built against the live API.
+4. The API already allows the Pages origin (`CORS_ORIGIN=https://mofchris.github.io`).
+
 ## License
 
 MIT — see [LICENSE](LICENSE). Advertisers, campaigns and metrics are fictional, for

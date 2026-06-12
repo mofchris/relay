@@ -1,0 +1,25 @@
+# Render blueprint for the Relay API (the backend the GitHub Pages frontend talks to).
+# In the Render dashboard: New > Blueprint > pick this repo > Apply.
+#
+# After it deploys, copy the service URL (e.g. https://relay-api.onrender.com) and set it
+# as a GitHub Actions repository variable named VITE_API_URL so the Pages build points at it.
+services:
+  - type: web
+    name: relay-api
+    runtime: node
+    rootDir: server
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      # node:sqlite needs Node >= 22.5
+      - key: NODE_VERSION
+        value: "22.13.1"
+      # Signs auth tokens; Render generates a strong value once.
+      - key: JWT_SECRET
+        generateValue: true
+      # Browser origin allowed to call the API (your GitHub Pages site).
+      - key: CORS_ORIGIN
+        value: https://mofchris.github.io
