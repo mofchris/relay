@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer";
 
 export function LandingPage() {
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh animate-in bg-background fade-in duration-500 motion-reduce:animate-none">
       <Header />
       <main>
         <HeroSection />

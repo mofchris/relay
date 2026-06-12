@@ -107,7 +107,7 @@ export function ConsolePage() {
   }
 
   return (
-    <div className="min-h-svh bg-background">
+    <div className="min-h-svh animate-in bg-background fade-in duration-300 motion-reduce:animate-none">
       <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <Link to="/" className="rounded-md p-1.5 hover:bg-muted">
@@ -154,7 +154,12 @@ export function ConsolePage() {
             {selected && (
               <div ref={resultRef} className="scroll-mt-20">
                 <h2 className="mb-3 text-lg font-semibold">Delivery decision</h2>
-                <DeliveryCard record={selected} comparison={comparison} />
+                <div
+                  key={selected.id}
+                  className="fade-in slide-in-from-bottom-2 animate-in duration-300 ease-out motion-reduce:animate-none"
+                >
+                  <DeliveryCard record={selected} comparison={comparison} />
+                </div>
               </div>
             )}
           </div>

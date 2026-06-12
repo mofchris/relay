@@ -57,7 +57,7 @@ export function AuthPage() {
   }
 
   return (
-    <main className="relative md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2">
+    <main className="relative animate-in fade-in duration-300 motion-reduce:animate-none md:h-screen md:overflow-hidden lg:grid lg:grid-cols-2">
       <div className="relative hidden h-full flex-col border-r bg-secondary p-10 lg:flex dark:bg-secondary/20">
         <div className="absolute inset-0 bg-linear-to-b from-transparent via-transparent to-background" />
         <Logo className="mr-auto h-4.5" />
