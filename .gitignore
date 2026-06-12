@@ -34,3 +34,6 @@ _shot-*.png
 
 # Local agent/editor settings
 .claude/
+
+# Local-only notes (not for the repo)
+FUNCTIONS.txt

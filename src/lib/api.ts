@@ -1,24 +1,24 @@
-// API client for Relay — the real-time ad delivery & analytics platform.
+// API client for Relay. Talks to the Relay API server (see /server).
 //
-// Two modes:
-//   1. Connected   — when VITE_API_URL is set, calls the serving backend
-//                    (POST /api/serve, GET /api/deliveries, GET /api/deliveries/:id).
-//   2. Demo/offline — when VITE_API_URL is unset, decisions are computed locally
-//                    with the deterministic engine in mock.ts and persisted in
-//                    localStorage, so the console is fully usable with no backend.
+// The base URL defaults to http://localhost:8787 for local development and can
+// be overridden with VITE_API_URL (e.g. for a deployed backend). Auth uses a
+// JWT stored in localStorage and sent as a Bearer token on protected calls.
 
-import { mockPipeline, mockServe } from "./mock";
-import type {
-  AdRequest,
-  DeliveryResponse,
-  SavedDeliveryRecord,
-} from "./types";
+import type { AdRequest, DeliveryResponse, SavedDeliveryRecord } from "./types";
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "").replace(/\/$/, "");
-const STORAGE_KEY = "relay_delivery_records";
-const MAX_RECORDS = 50;
+const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8787").replace(/\/$/, "");
+const TOKEN_KEY = "relay_token";
 
-export const isDemoMode = API_BASE === "";
+export interface AuthUser {
+  id: number;
+  email: string;
+  name: string | null;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: AuthUser;
+}
 
 /** Raised for any API-level failure; carries a user-friendly message. */
 export class ApiError extends Error {
@@ -30,120 +30,109 @@ export class ApiError extends Error {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Demo-mode persistence (localStorage)
-// ---------------------------------------------------------------------------
+// --- token helpers ---------------------------------------------------------
 
-function readLocal(): SavedDeliveryRecord[] {
+export function getToken(): string | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as SavedDeliveryRecord[]) : [];
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
-    // Malformed storage should never crash the UI.
-    return [];
+    return null;
   }
 }
 
-function writeLocal(records: SavedDeliveryRecord[]): void {
+function setToken(token: string | null): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(records.slice(0, MAX_RECORDS)));
+    if (token) localStorage.setItem(TOKEN_KEY, token);
+    else localStorage.removeItem(TOKEN_KEY);
   } catch {
-    // Quota / private mode — non-fatal for a demo.
+    /* storage unavailable — non-fatal */
   }
 }
 
-function uuid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx`.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+// --- core fetch ------------------------------------------------------------
+
+interface FetchOptions {
+  method?: string;
+  body?: unknown;
+  auth?: boolean;
 }
 
-// Simulate network latency so loading states are visible in demo mode.
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
-
-export async function serveAd(request: AdRequest): Promise<DeliveryResponse> {
-  if (isDemoMode) {
-    await delay(450);
-    const requestId = uuid();
-    const decision = mockServe(request, requestId);
-    const pipeline = mockPipeline(requestId);
-    const record: SavedDeliveryRecord = {
-      id: requestId,
-      created_at: new Date().toISOString(),
-      request,
-      decision,
-      pipeline,
-    };
-    const records = readLocal();
-    records.unshift(record);
-    writeLocal(records);
-    return { request_id: requestId, status: decision.filled ? "filled" : "no_fill", decision, pipeline };
+async function apiFetch(path: string, { method = "GET", body, auth = false }: FetchOptions = {}): Promise<unknown> {
+  const headers: Record<string, string> = {};
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (auth) {
+    const token = getToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetchJson("/api/serve", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
-  return res as DeliveryResponse;
-}
-
-export async function listDeliveries(): Promise<SavedDeliveryRecord[]> {
-  if (isDemoMode) {
-    await delay(150);
-    return readLocal();
-  }
-  const res = await fetchJson("/api/deliveries", { method: "GET" });
-  return (Array.isArray(res) ? res : []) as SavedDeliveryRecord[];
-}
-
-export async function getDelivery(id: string): Promise<SavedDeliveryRecord | null> {
-  if (isDemoMode) {
-    await delay(100);
-    return readLocal().find((r) => r.id === id) ?? null;
-  }
-  const res = await fetchJson(`/api/deliveries/${encodeURIComponent(id)}`, { method: "GET" });
-  return res as SavedDeliveryRecord;
-}
-
-async function fetchJson(path: string, init: RequestInit): Promise<unknown> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, init);
+    res = await fetch(`${API_BASE}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
   } catch {
-    throw new ApiError("NETWORK", "Could not reach the serving backend. Please try again.");
+    throw new ApiError("NETWORK", "Could not reach the Relay API. Is the server running?");
   }
 
   let data: unknown = null;
   try {
     data = await res.json();
   } catch {
-    // Some endpoints (or errors) may not return JSON.
+    /* not all responses carry JSON */
   }
 
   if (!res.ok) {
-    const detail = (data as { detail?: { message?: string } | string })?.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : detail?.message ?? "The request failed. Please try again.";
-    const code =
-      typeof detail === "object" && detail && "code" in detail
-        ? String((detail as { code?: string }).code)
-        : `HTTP_${res.status}`;
+    const detail = (data as { detail?: { message?: string; code?: string } | string })?.detail;
+    const message = typeof detail === "string" ? detail : detail?.message ?? "The request failed. Please try again.";
+    const code = typeof detail === "object" && detail?.code ? detail.code : `HTTP_${res.status}`;
     throw new ApiError(code, message);
   }
 
   return data;
+}
+
+// --- auth ------------------------------------------------------------------
+
+export async function signup(email: string, password: string, name?: string): Promise<AuthUser> {
+  const res = (await apiFetch("/api/auth/signup", { method: "POST", body: { email, password, name } })) as AuthResponse;
+  setToken(res.token);
+  return res.user;
+}
+
+export async function login(email: string, password: string): Promise<AuthUser> {
+  const res = (await apiFetch("/api/auth/login", { method: "POST", body: { email, password } })) as AuthResponse;
+  setToken(res.token);
+  return res.user;
+}
+
+export async function demoLogin(): Promise<AuthUser> {
+  const res = (await apiFetch("/api/auth/demo", { method: "POST" })) as AuthResponse;
+  setToken(res.token);
+  return res.user;
+}
+
+export async function fetchMe(): Promise<AuthUser> {
+  const res = (await apiFetch("/api/me", { auth: true })) as { user: AuthUser };
+  return res.user;
+}
+
+export function logout(): void {
+  setToken(null);
+}
+
+// --- serving ---------------------------------------------------------------
+
+export async function serveAd(adRequest: AdRequest): Promise<DeliveryResponse> {
+  return (await apiFetch("/api/serve", { method: "POST", body: adRequest, auth: true })) as DeliveryResponse;
+}
+
+export async function listDeliveries(): Promise<SavedDeliveryRecord[]> {
+  const res = await apiFetch("/api/deliveries", { auth: true });
+  return (Array.isArray(res) ? res : []) as SavedDeliveryRecord[];
+}
+
+export async function getDelivery(id: string): Promise<SavedDeliveryRecord | null> {
+  return (await apiFetch(`/api/deliveries/${encodeURIComponent(id)}`, { auth: true })) as SavedDeliveryRecord;
 }

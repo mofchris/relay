@@ -1,10 +1,9 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Sparkles, BarChart3, Timer, Target, CircleDollarSign } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { LogOut, BarChart3, Timer, Target, CircleDollarSign } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -16,7 +15,8 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { AdRequestForm } from "@/components/ad-request-form";
 import { DeliveryCard } from "@/components/delivery-card";
 import { RecentDeliveries } from "@/components/recent-deliveries";
-import { isDemoMode, listDeliveries } from "@/lib/api";
+import { listDeliveries } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type { DeliveryResponse, SavedDeliveryRecord } from "@/lib/types";
 
 interface Kpis {
@@ -41,10 +41,17 @@ function computeKpis(records: SavedDeliveryRecord[]): Kpis {
 }
 
 export function ConsolePage() {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [result, setResult] = useState<DeliveryResponse | null>(null);
   const [refreshSignal, setRefreshSignal] = useState(0);
   const [kpis, setKpis] = useState<Kpis>({ total: 0, fillRate: 0, avgLatency: 0, revenue: 0 });
   const resultRef = useRef<HTMLDivElement>(null);
+
+  function handleSignOut() {
+    logout();
+    navigate("/");
+  }
 
   useEffect(() => {
     let active = true;
@@ -70,17 +77,10 @@ export function ConsolePage() {
             <Logo className="h-5" />
           </Link>
           <div className="flex items-center gap-2">
-            {isDemoMode && (
-              <Badge variant="outline" className="gap-1.5">
-                <Sparkles className="size-3" />
-                Demo mode
-              </Badge>
-            )}
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/">
-                <ArrowLeft className="size-4" data-icon="inline-start" />
-                Back to site
-              </Link>
+            {user?.email && <span className="hidden text-sm text-muted-foreground sm:inline">{user.email}</span>}
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="size-4" data-icon="inline-start" />
+              Sign out
             </Button>
             <ModeToggle />
           </div>
