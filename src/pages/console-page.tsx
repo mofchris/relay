@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ModeToggle } from "@/components/mode-toggle";
 import { AdRequestForm } from "@/components/ad-request-form";
 import { DeliveryCard } from "@/components/delivery-card";
 import { RecentDeliveries } from "@/components/recent-deliveries";
@@ -81,6 +82,7 @@ export function ConsolePage() {
                 Back to site
               </Link>
             </Button>
+            <ModeToggle />
           </div>
         </div>
       </header>

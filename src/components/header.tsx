@@ -5,6 +5,7 @@ import { Logo } from "@/components/logo";
 import { useScroll } from "@/hooks/use-scroll";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
+import { ModeToggle } from "@/components/mode-toggle";
 
 export const navLinks = [
   {
@@ -45,22 +46,25 @@ export function Header() {
         <Link className="rounded-md p-2 hover:bg-muted dark:hover:bg-muted/50" to="/">
           <Logo className="h-4" />
         </Link>
-        <div className="hidden items-center gap-2 md:flex">
-          <div>
-            {navLinks.map((link) => (
-              <Button asChild key={link.label} size="sm" variant="ghost">
-                <a href={link.href}>{link.label}</a>
-              </Button>
-            ))}
+        <div className="flex items-center gap-1">
+          <div className="hidden items-center gap-2 md:flex">
+            <div>
+              {navLinks.map((link) => (
+                <Button asChild key={link.label} size="sm" variant="ghost">
+                  <a href={link.href}>{link.label}</a>
+                </Button>
+              ))}
+            </div>
+            <Button asChild size="sm" variant="outline">
+              <Link to="/auth">Sign In</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/app">Open console</Link>
+            </Button>
           </div>
-          <Button asChild size="sm" variant="outline">
-            <Link to="/auth">Sign In</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to="/app">Open console</Link>
-          </Button>
+          <ModeToggle />
+          <MobileNav />
         </div>
-        <MobileNav />
       </nav>
     </header>
   );

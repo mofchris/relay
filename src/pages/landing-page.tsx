@@ -7,9 +7,7 @@ import { Footer } from "@/components/footer";
 export function LandingPage() {
   return (
     <div className="min-h-svh bg-background">
-      <div className="px-2 pt-2 md:px-0">
-        <Header />
-      </div>
+      <Header />
       <main>
         <HeroSection />
         <FeaturesSection />
