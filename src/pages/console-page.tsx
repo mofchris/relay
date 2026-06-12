@@ -1,0 +1,145 @@
+import type React from "react";
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Sparkles, BarChart3, Timer, Target, CircleDollarSign } from "lucide-react";
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AdRequestForm } from "@/components/ad-request-form";
+import { DeliveryCard } from "@/components/delivery-card";
+import { RecentDeliveries } from "@/components/recent-deliveries";
+import { isDemoMode, listDeliveries } from "@/lib/api";
+import type { DeliveryResponse, SavedDeliveryRecord } from "@/lib/types";
+
+interface Kpis {
+  total: number;
+  fillRate: number;
+  avgLatency: number;
+  revenue: number;
+}
+
+function computeKpis(records: SavedDeliveryRecord[]): Kpis {
+  if (records.length === 0) return { total: 0, fillRate: 0, avgLatency: 0, revenue: 0 };
+  const filled = records.filter((r) => r.decision.filled);
+  const latency = records.reduce((sum, r) => sum + r.decision.latency_ms, 0) / records.length;
+  // Each delivery is one impression; revenue = clearing CPM / 1,000.
+  const revenue = filled.reduce((sum, r) => sum + r.decision.clearing_price_cpm / 1000, 0);
+  return {
+    total: records.length,
+    fillRate: filled.length / records.length,
+    avgLatency: latency,
+    revenue,
+  };
+}
+
+export function ConsolePage() {
+  const [result, setResult] = useState<DeliveryResponse | null>(null);
+  const [refreshSignal, setRefreshSignal] = useState(0);
+  const [kpis, setKpis] = useState<Kpis>({ total: 0, fillRate: 0, avgLatency: 0, revenue: 0 });
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+    listDeliveries()
+      .then((rows) => active && setKpis(computeKpis(rows)))
+      .catch(() => active && setKpis(computeKpis([])));
+    return () => {
+      active = false;
+    };
+  }, [refreshSignal]);
+
+  function handleResult(response: DeliveryResponse) {
+    setResult(response);
+    setRefreshSignal((n) => n + 1);
+    requestAnimationFrame(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  return (
+    <div className="min-h-svh bg-background">
+      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-sm">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
+          <Link to="/" className="rounded-md p-1.5 hover:bg-muted">
+            <Logo className="h-5" />
+          </Link>
+          <div className="flex items-center gap-2">
+            {isDemoMode && (
+              <Badge variant="outline" className="gap-1.5">
+                <Sparkles className="size-3" />
+                Demo mode
+              </Badge>
+            )}
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/">
+                <ArrowLeft className="size-4" data-icon="inline-start" />
+                Back to site
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6 space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Ad Delivery Console</h1>
+          <p className="text-muted-foreground">
+            Fire a synthetic ad request and watch the real-time auction pick a winner, price it, and stream the event.
+          </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border lg:grid-cols-4">
+          <Kpi icon={<BarChart3 className="size-4" />} label="Requests served" value={kpis.total.toLocaleString()} />
+          <Kpi icon={<Target className="size-4" />} label="Fill rate" value={`${(kpis.fillRate * 100).toFixed(0)}%`} />
+          <Kpi icon={<Timer className="size-4" />} label="Avg latency" value={kpis.total ? `${kpis.avgLatency.toFixed(1)} ms` : "—"} />
+          <Kpi icon={<CircleDollarSign className="size-4" />} label="Est. revenue" value={`$${kpis.revenue.toFixed(4)}`} />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-6 lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>New ad request</CardTitle>
+                <CardDescription>Set the targeting context — the engine runs a second-price auction across eligible campaigns.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdRequestForm onResult={handleResult} />
+              </CardContent>
+            </Card>
+
+            {result && (
+              <div ref={resultRef} className="scroll-mt-20">
+                <h2 className="mb-3 text-lg font-semibold">Delivery decision</h2>
+                <DeliveryCard response={result} />
+              </div>
+            )}
+          </div>
+
+          <aside className="lg:col-span-1">
+            <div className="lg:sticky lg:top-20">
+              <h2 className="mb-3 text-lg font-semibold">Recent deliveries</h2>
+              <RecentDeliveries refreshSignal={refreshSignal} />
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function Kpi({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="bg-card px-4 py-4">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
+        <span className="text-primary">{icon}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="mt-1.5 font-semibold text-2xl tabular-nums">{value}</p>
+    </div>
+  );
+}
