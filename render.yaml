@@ -5,7 +5,7 @@
 # as a GitHub Actions repository variable named VITE_API_URL so the Pages build points at it.
 services:
   - type: web
-    name: relay-api
+    name: relay-api-mofchris
     runtime: node
     rootDir: server
     plan: free
