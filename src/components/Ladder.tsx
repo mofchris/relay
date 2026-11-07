@@ -90,7 +90,7 @@ export function Ladder({ auction, country, className }: { auction: AuctionResult
                       scale: `${scale(b.score)} 1`,
                       animationDelay: `${i * 35}ms`,
                       background: won ? brand.bg : b.status === "runner_up" ? "var(--ink)" : "var(--hatch)",
-                      boxShadow: won ? `inset 0 0 0 1px color-mix(in srgb, ${brand.fg} 25%, transparent)` : undefined,
+                      boxShadow: won ? `inset 0 0 0 2px ${brand.accent}` : undefined,
                     }}
                   />
                 )}

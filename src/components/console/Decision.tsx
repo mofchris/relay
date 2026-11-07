@@ -3,6 +3,15 @@ import { COUNTRY_LABELS, DEVICE_LABELS, INTEREST_KEYWORDS, PLACEMENT_LABELS, SEG
 import type { AdRequest, Delivery } from "@shared/contract.ts";
 import { Ladder } from "@/components/Ladder";
 import { Slot } from "@/components/Slot";
+
+/** Show each placement near its real size instead of stretching it. */
+const SLOT_WIDTH: Record<AdRequest["placement"], string> = {
+  banner: "max-w-3xl",
+  sidebar: "max-w-[20rem]",
+  feed: "max-w-2xl",
+  interstitial: "max-w-3xl",
+  video: "max-w-2xl",
+};
 import { explain, runnerUpOf, winnerOf } from "@/lib/explain";
 import { SCENARIOS } from "@/lib/scenarios";
 import { listAnd, ms, percent, relativeDay, shortId, usd } from "@/lib/format";
@@ -99,7 +108,7 @@ export function Decision({ delivery, roundTripMs, fresh, running, onRun }: Props
         </dl>
       )}
 
-      <Slot placement={request.placement} auction={auction} country={request.country} explainable={false} className="mt-8 max-w-3xl" />
+      <Slot placement={request.placement} auction={auction} country={request.country} explainable={false} className={`mt-8 ${SLOT_WIDTH[request.placement]}`} />
       <h3 className="heading mt-12 text-xl">The auction behind it</h3>
       <Ladder auction={auction} country={request.country} className="mt-4" />
 
