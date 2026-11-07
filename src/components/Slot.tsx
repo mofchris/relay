@@ -84,7 +84,7 @@ export function Slot({ placement, auction, country, explainable = true, classNam
         {auction && explainable && (
           <button
             type="button"
-            className="link ml-1.5 text-ink"
+            className="link ml-1.5 inline-block py-1 text-ink hover:text-spec"
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
           >

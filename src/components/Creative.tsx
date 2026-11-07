@@ -37,7 +37,7 @@ export function Creative({ bidder, placement }: { bidder: Bidder; placement: Pla
   const voice = cx("font-bold tracking-[-0.03em]", b.upper && "uppercase tracking-[-0.01em]", b.italic && "italic");
   const label = `Ad from ${bidder.advertiser}, a fictional advertiser: ${bidder.headline}`;
   const cta = (
-    <span className="inline-flex items-center px-[0.9em] py-[0.55em] text-[0.8em] font-bold whitespace-nowrap" style={{ background: b.accent, color: b.bg }}>
+    <span className="inline-flex items-center px-[0.9em] py-[0.55em] text-[0.8em] font-bold whitespace-nowrap" style={{ background: b.accent, color: b.ctaFg }}>
       {b.cta}
     </span>
   );
@@ -47,7 +47,7 @@ export function Creative({ bidder, placement }: { bidder: Bidder; placement: Pla
       <div role="img" aria-label={label} className="relative flex h-full items-center gap-[3cqi] px-[3cqi] text-[clamp(0.6rem,2.1cqi,1.05rem)]" style={style}>
         <Mark shape={b.mark} color={b.accent} className="h-[55%] shrink-0" />
         <div className="min-w-0 flex-1 leading-tight">
-          <p className="hidden font-semibold opacity-80 @[30rem]:block">{bidder.advertiser}</p>
+          <p className="hidden font-semibold @[30rem]:block">{bidder.advertiser}</p>
           <p className={cx("truncate text-[1.35em]", voice)}>{bidder.headline}</p>
         </div>
         <span className="hidden @[30rem]:inline-flex">{cta}</span>
@@ -107,7 +107,7 @@ export function Creative({ bidder, placement }: { bidder: Bidder; placement: Pla
       <div className="flex flex-col justify-between p-[4cqi]">
         <AdBadge fg={b.fg} />
         <div>
-          <p className="mb-[0.6em] font-semibold opacity-80">{bidder.advertiser}</p>
+          <p className="mb-[0.6em] font-semibold">{bidder.advertiser}</p>
           <p className={cx(big ? "text-[3.6em]" : "text-[2.6em]", "leading-[0.95]", voice)}>{bidder.headline}</p>
         </div>
         <span className="self-start">{cta}</span>

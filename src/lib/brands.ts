@@ -9,21 +9,23 @@ export interface Brand {
   bg: string;
   fg: string;
   accent: string;
+  /** Text colour on the accent-coloured call-to-action. */
+  ctaFg: string;
   mark: MarkShape;
   cta: string;
   upper: boolean;
   italic: boolean;
 }
 
-const FALLBACK: Brand = { bg: "#1b1b1f", fg: "#ffffff", accent: "#d6006f", mark: "hex", cta: "Learn more", upper: false, italic: false };
+const FALLBACK: Brand = { bg: "#1b1b1f", fg: "#ffffff", accent: "#d6006f", ctaFg: "#ffffff", mark: "hex", cta: "Learn more", upper: false, italic: false };
 
 export const BRANDS: Record<string, Brand> = {
-  cmp_nova: { bg: "#120f3a", fg: "#ffffff", accent: "#79f2ff", mark: "hex", cta: "Deploy now", upper: false, italic: false },
-  cmp_helix: { bg: "#c8ff1a", fg: "#0a0a0b", accent: "#0a0a0b", mark: "helix", cta: "Play free", upper: true, italic: true },
-  cmp_lumen: { bg: "#0f3b2c", fg: "#f3e8c9", accent: "#e6bd5f", mark: "arc", cta: "Check your rate", upper: true, italic: false },
-  cmp_pulse: { bg: "#ff5243", fg: "#ffffff", accent: "#ffe1dc", mark: "pulse", cta: "Start running", upper: false, italic: false },
-  cmp_drift: { bg: "#bfe4f3", fg: "#0b2a3a", accent: "#ff7a2f", mark: "wave", cta: "See the deals", upper: false, italic: false },
-  cmp_bytemart: { bg: "#ffd60a", fg: "#111111", accent: "#e3121b", mark: "tag", cta: "Shop the sale", upper: true, italic: false },
+  cmp_nova: { bg: "#120f3a", fg: "#ffffff", accent: "#79f2ff", ctaFg: "#120f3a", mark: "hex", cta: "Deploy now", upper: false, italic: false },
+  cmp_helix: { bg: "#c8ff1a", fg: "#0a0a0b", accent: "#0a0a0b", ctaFg: "#c8ff1a", mark: "helix", cta: "Play free", upper: true, italic: true },
+  cmp_lumen: { bg: "#0f3b2c", fg: "#f3e8c9", accent: "#e6bd5f", ctaFg: "#0f3b2c", mark: "arc", cta: "Check your rate", upper: true, italic: false },
+  cmp_pulse: { bg: "#d1382a", fg: "#ffffff", accent: "#ffe1dc", ctaFg: "#a3221a", mark: "pulse", cta: "Start running", upper: false, italic: false },
+  cmp_drift: { bg: "#bfe4f3", fg: "#0b2a3a", accent: "#ff7a2f", ctaFg: "#0b2a3a", mark: "wave", cta: "See the deals", upper: false, italic: false },
+  cmp_bytemart: { bg: "#ffd60a", fg: "#111111", accent: "#e3121b", ctaFg: "#ffffff", mark: "tag", cta: "Shop the sale", upper: true, italic: false },
 };
 
 export const brandOf = (campaignId: string | null | undefined): Brand => (campaignId && BRANDS[campaignId]) || FALLBACK;
