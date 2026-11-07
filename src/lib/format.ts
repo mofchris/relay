@@ -1,7 +1,8 @@
 export const usd = (n: number) => `$${n.toFixed(2)}`;
 
 /** Spend is fractions of a cent per impression, so show enough digits to be true. */
-export const usdSmall = (n: number) => (n === 0 ? "$0" : n < 0.01 ? `$${n.toFixed(5)}` : `$${n.toFixed(2)}`);
+export const usdSmall = (n: number) =>
+  n === 0 ? "$0" : n < 0.01 ? `$${n.toFixed(5)}` : n < 1 ? `$${n.toFixed(4)}` : `$${n.toFixed(2)}`;
 
 export const percent = (n: number, digits = 2) => `${(n * 100).toFixed(digits)}%`;
 

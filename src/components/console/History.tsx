@@ -98,6 +98,7 @@ export function History({ page, state, error, selectedId, onSelect, onRetry }: H
                   <span className="order-4 col-span-2 truncate text-sm text-muted md:order-none md:col-span-1">
                     {SEGMENT_LABELS[d.request.segment]} · {DEVICE_LABELS[d.request.device]} · {PLACEMENT_LABELS[d.request.placement]} ·{" "}
                     {d.request.country}
+                    {d.request.interests && <> · “{d.request.interests}”</>}
                   </span>
                   <span className={cx("order-1 truncate font-semibold md:order-none", selected && "text-accent")}>
                     {winner ? winner.advertiser : "Unfilled"}
