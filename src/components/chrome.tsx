@@ -81,7 +81,7 @@ export function NavItem({ to, children }: { to: string; children: string }) {
     <NavLink
       to={to}
       className={({ isActive }) =>
-        cx("hidden rounded-full px-3 py-2 text-sm font-semibold sm:inline-flex", isActive ? "text-ink" : "text-muted hover:text-ink")
+        cx("inline-flex rounded-full px-3 py-2 text-sm font-semibold", isActive ? "text-ink" : "text-muted hover:text-ink")
       }
     >
       <Roll>{children}</Roll>

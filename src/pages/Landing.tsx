@@ -71,6 +71,7 @@ function StartButton({ className }: { className?: string }) {
 }
 
 function Hero() {
+  const { status } = useSession();
   return (
     <section className="mx-auto grid max-w-7xl gap-12 px-4 pt-10 pb-20 sm:px-8 lg:grid-cols-12 lg:gap-10 lg:pt-16">
       <div className="lg:col-span-5 lg:pt-6">
@@ -85,7 +86,9 @@ function Hero() {
             <Roll>Sign in</Roll>
           </Link>
         </div>
-        <p className="mt-4 text-sm text-muted">No sign-up: you get a private sandbox that is deleted after three days.</p>
+        {status !== "signed-in" && (
+          <p className="mt-4 text-sm text-muted">No sign-up: you get a private sandbox that is deleted after three days.</p>
+        )}
       </div>
       <div className="lg:col-span-7">
         <LivePreview />
