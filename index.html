@@ -2,16 +2,34 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Relay: an ad server you can watch think</title>
     <meta
       name="description"
-      content="Relay — a real-time ad delivery and analytics platform. Targeted decisioning, second-price auctions, streaming Kafka pipelines, and edge caching, built to scale."
+      content="Relay runs a real second-price ad auction on the server for every request, then shows who won, what they paid and why. A portfolio project; the advertisers are fictional."
     />
-    <title>Relay — Real-Time Ad Delivery & Analytics</title>
+    <meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#090c14" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href="https://relay-auction.pages.dev/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Relay: an ad server you can watch think" />
+    <meta property="og:description" content="Run a real second-price ad auction and see every bidder's score, the winner and the price it paid." />
+    <meta property="og:url" content="https://relay-auction.pages.dev/" />
+    <meta property="og:image" content="https://relay-auction.pages.dev/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      // Apply the saved theme (or the system one) before first paint.
+      try {
+        var saved = localStorage.getItem("relay.theme");
+        var dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>Relay needs JavaScript to run auctions in your browser.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

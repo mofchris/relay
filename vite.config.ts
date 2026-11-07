@@ -1,17 +1,19 @@
-import path from "path"
+import path from "node:path"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
-// https://vite.dev/config/
-// `base` is "/" for local dev; the GitHub Pages build sets VITE_BASE=/relay/
-// so assets resolve under the project-pages path.
+// In development the API runs under `wrangler pages dev` on :8788 (see
+// `npm run dev`); Vite forwards /api to it so the app always calls same-origin.
 export default defineConfig({
-  base: process.env.VITE_BASE ?? "/",
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
+      "@shared": path.resolve(import.meta.dirname, "./shared"),
     },
+  },
+  server: {
+    proxy: { "/api": "http://127.0.0.1:8788" },
   },
 })

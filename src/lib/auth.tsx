@@ -1,58 +1,76 @@
-// Auth context. Holds the signed-in user and exposes sign-in / sign-up /
-// demo-login / logout. On mount it restores the session from a stored token.
+// Session state: who is signed in, and the actions that change it.
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import * as api from "@/lib/api";
-import type { AuthUser } from "@/lib/api";
+import type { AuthResponse, User } from "@shared/contract.ts";
+import { api, getToken, setToken } from "./api";
 
-interface AuthState {
-  user: AuthUser | null;
-  loading: boolean;
-  signup: (email: string, password: string, name?: string) => Promise<void>;
+type Status = "checking" | "signed-in" | "signed-out";
+
+interface Session {
+  user: User | null;
+  status: Status;
+  startGuest: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  demoLogin: () => Promise<void>;
-  logout: () => void;
+  signup: (email: string, password: string, name: string) => Promise<void>;
+  signOut: () => void;
 }
 
-const AuthContext = createContext<AuthState | null>(null);
+const SessionContext = createContext<Session | null>(null);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+export function SessionProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [status, setStatus] = useState<Status>(() => (getToken() ? "checking" : "signed-out"));
 
+  // Restore a stored session once, on load.
   useEffect(() => {
+    if (!getToken()) return;
     let active = true;
-    if (!api.getToken()) {
-      setLoading(false);
-      return;
-    }
     api
-      .fetchMe()
-      .then((u) => active && setUser(u))
-      .catch(() => {
-        api.logout();
-        if (active) setUser(null);
+      .me()
+      .then(({ user }) => {
+        if (!active) return;
+        setUser(user);
+        setStatus("signed-in");
       })
-      .finally(() => active && setLoading(false));
+      .catch(() => {
+        if (!active) return;
+        setToken(null);
+        setStatus("signed-out");
+      });
     return () => {
       active = false;
     };
   }, []);
 
-  const signup = async (email: string, password: string, name?: string) => setUser(await api.signup(email, password, name));
-  const login = async (email: string, password: string) => setUser(await api.login(email, password));
-  const demoLogin = async () => setUser(await api.demoLogin());
-  const logout = () => {
-    api.logout();
-    setUser(null);
-  };
+  const accept = useCallback(({ token, user }: AuthResponse) => {
+    setToken(token);
+    setUser(user);
+    setStatus("signed-in");
+  }, []);
 
-  return <AuthContext.Provider value={{ user, loading, signup, login, demoLogin, logout }}>{children}</AuthContext.Provider>;
+  const value = useMemo<Session>(
+    () => ({
+      user,
+      status,
+      startGuest: async () => accept(await api.guest()),
+      login: async (email, password) => accept(await api.login(email, password)),
+      signup: async (email, password, name) => accept(await api.signup(email, password, name)),
+      signOut: () => {
+        setToken(null);
+        setUser(null);
+        setStatus("signed-out");
+      },
+    }),
+    [user, status, accept],
+  );
+
+  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
-export function useAuth(): AuthState {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
-  return ctx;
+// eslint-disable-next-line react-refresh/only-export-components
+export function useSession(): Session {
+  const session = useContext(SessionContext);
+  if (!session) throw new Error("useSession must be used inside <SessionProvider>");
+  return session;
 }

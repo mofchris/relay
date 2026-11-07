@@ -1,36 +1,30 @@
-// API client for Relay. Talks to the Relay API server (see /server).
-//
-// The base URL defaults to http://localhost:8787 for local development and can
-// be overridden with VITE_API_URL (e.g. for a deployed backend). Auth uses a
-// JWT stored in localStorage and sent as a Bearer token on protected calls.
+// HTTP client for the Relay API. The app and the API share an origin, so every
+// call is a relative /api path. The session token lives in localStorage and is
+// sent as a Bearer token.
 
-import type { AdRequest, DeliveryResponse, SavedDeliveryRecord } from "./types";
+import type {
+  AdRequest,
+  ApiErrorBody,
+  AuthResponse,
+  Campaign,
+  DeliveriesPage,
+  Delivery,
+  PreviewResponse,
+  User,
+} from "@shared/contract.ts";
 
-const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:8787").replace(/\/$/, "");
-const TOKEN_KEY = "relay_token";
+const TOKEN_KEY = "relay.session";
 
-export interface AuthUser {
-  id: number;
-  email: string;
-  name: string | null;
-}
-
-export interface AuthResponse {
-  token: string;
-  user: AuthUser;
-}
-
-/** Raised for any API-level failure; carries a user-friendly message. */
 export class ApiError extends Error {
   code: string;
-  constructor(code: string, message: string) {
+  status: number;
+  constructor(code: string, message: string, status: number) {
     super(message);
     this.name = "ApiError";
     this.code = code;
+    this.status = status;
   }
 }
-
-// --- token helpers ---------------------------------------------------------
 
 export function getToken(): string | null {
   try {
@@ -40,99 +34,52 @@ export function getToken(): string | null {
   }
 }
 
-function setToken(token: string | null): void {
+export function setToken(token: string | null): void {
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token);
     else localStorage.removeItem(TOKEN_KEY);
   } catch {
-    /* storage unavailable — non-fatal */
+    // Storage blocked (private mode): the session lasts until reload.
   }
 }
 
-// --- core fetch ------------------------------------------------------------
-
-interface FetchOptions {
-  method?: string;
-  body?: unknown;
-  auth?: boolean;
-}
-
-async function apiFetch(path: string, { method = "GET", body, auth = false }: FetchOptions = {}): Promise<unknown> {
+async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
-  if (body !== undefined) headers["Content-Type"] = "application/json";
-  if (auth) {
-    const token = getToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  }
+  if (body !== undefined) headers["content-type"] = "application/json";
+  const token = getToken();
+  if (token) headers.authorization = `Bearer ${token}`;
 
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    res = await fetch(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch {
-    throw new ApiError("NETWORK", "Could not reach the Relay API. Is the server running?");
+    throw new ApiError("NETWORK", "Could not reach the Relay API. Check your connection and try again.", 0);
   }
 
-  let data: unknown = null;
-  try {
-    data = await res.json();
-  } catch {
-    /* not all responses carry JSON */
-  }
-
+  const data = (await res.json().catch(() => null)) as T | ApiErrorBody | null;
   if (!res.ok) {
-    const detail = (data as { detail?: { message?: string; code?: string } | string })?.detail;
-    const message = typeof detail === "string" ? detail : detail?.message ?? "The request failed. Please try again.";
-    const code = typeof detail === "object" && detail?.code ? detail.code : `HTTP_${res.status}`;
-    throw new ApiError(code, message);
+    const error = (data as ApiErrorBody | null)?.error;
+    throw new ApiError(
+      error?.code ?? `HTTP_${res.status}`,
+      error?.message ?? "The API returned an error. Try again in a moment.",
+      res.status,
+    );
   }
-
-  return data;
+  return data as T;
 }
 
-// --- auth ------------------------------------------------------------------
+export const api = {
+  guest: () => call<AuthResponse>("POST", "/api/auth/guest"),
+  login: (email: string, password: string) => call<AuthResponse>("POST", "/api/auth/login", { email, password }),
+  signup: (email: string, password: string, name: string) =>
+    call<AuthResponse>("POST", "/api/auth/signup", { email, password, name }),
+  me: () => call<{ user: User }>("GET", "/api/me"),
+  campaigns: () => call<{ campaigns: Campaign[] }>("GET", "/api/campaigns"),
+  preview: (slot: PreviewResponse["request"]) =>
+    call<PreviewResponse>("GET", `/api/auction/preview?${new URLSearchParams(slot)}`),
+  serve: (request: AdRequest) => call<Delivery>("POST", "/api/deliveries", request),
+  deliveries: () => call<DeliveriesPage>("GET", "/api/deliveries"),
+};
 
-export async function signup(email: string, password: string, name?: string): Promise<AuthUser> {
-  const res = (await apiFetch("/api/auth/signup", { method: "POST", body: { email, password, name } })) as AuthResponse;
-  setToken(res.token);
-  return res.user;
-}
-
-export async function login(email: string, password: string): Promise<AuthUser> {
-  const res = (await apiFetch("/api/auth/login", { method: "POST", body: { email, password } })) as AuthResponse;
-  setToken(res.token);
-  return res.user;
-}
-
-export async function demoLogin(): Promise<AuthUser> {
-  const res = (await apiFetch("/api/auth/demo", { method: "POST" })) as AuthResponse;
-  setToken(res.token);
-  return res.user;
-}
-
-export async function fetchMe(): Promise<AuthUser> {
-  const res = (await apiFetch("/api/me", { auth: true })) as { user: AuthUser };
-  return res.user;
-}
-
-export function logout(): void {
-  setToken(null);
-}
-
-// --- serving ---------------------------------------------------------------
-
-export async function serveAd(adRequest: AdRequest): Promise<DeliveryResponse> {
-  return (await apiFetch("/api/serve", { method: "POST", body: adRequest, auth: true })) as DeliveryResponse;
-}
-
-export async function listDeliveries(): Promise<SavedDeliveryRecord[]> {
-  const res = await apiFetch("/api/deliveries", { auth: true });
-  return (Array.isArray(res) ? res : []) as SavedDeliveryRecord[];
-}
-
-export async function getDelivery(id: string): Promise<SavedDeliveryRecord | null> {
-  return (await apiFetch(`/api/deliveries/${encodeURIComponent(id)}`, { auth: true })) as SavedDeliveryRecord;
-}
+export const messageOf = (error: unknown) =>
+  error instanceof ApiError ? error.message : "Something went wrong. Try again in a moment.";
