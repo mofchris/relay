@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { COUNTRY_LABELS, DEVICE_LABELS, INTEREST_KEYWORDS, PLACEMENT_LABELS, SEGMENT_LABELS } from "@shared/contract.ts";
 import type { AdRequest, Delivery } from "@shared/contract.ts";
 import { Ladder } from "@/components/Ladder";
-import { Roll } from "@/components/chrome";
+import { Slot } from "@/components/Slot";
 import { explain, runnerUpOf, winnerOf } from "@/lib/explain";
 import { SCENARIOS } from "@/lib/scenarios";
 import { listAnd, ms, percent, relativeDay, shortId, usd } from "@/lib/format";
@@ -74,7 +74,7 @@ export function Decision({ delivery, roundTripMs, fresh, running, onRun }: Props
         {fresh ? "Just now" : relativeDay(delivery.created_at)} · Delivery{" "}
         <span className="font-mono text-xs text-ink">{shortId(delivery.id)}</span>
       </p>
-      <h2 id="decision-title" className="title mt-3 text-[clamp(1.6rem,3vw,2.4rem)]">
+      <h2 id="decision-title" className="heading mt-3 text-[clamp(1.6rem,3vw,2.4rem)]">
         {explanation.headline}
       </h2>
       <p className="mt-3 text-muted">
@@ -83,25 +83,25 @@ export function Decision({ delivery, roundTripMs, fresh, running, onRun }: Props
       </p>
 
       {winner && (
-        <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-line bg-line sm:grid-cols-4">
+        <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden border border-line bg-line sm:grid-cols-4">
           {[
             ["Bid", usd(winner.bid_cpm), "per 1,000 impressions"],
             ["Pays", usd(auction.clearing_price_cpm), "per 1,000 impressions"],
             ["Kept", usd(winner.bid_cpm - auction.clearing_price_cpm), "versus its bid"],
             ["Predicted CTR", percent(winner.predicted_ctr), `usual ${percent(winner.predicted_ctr / winner.relevance)}`],
           ].map(([term, value, note], i) => (
-            <div key={term} className="bg-raised px-4 py-4">
+            <div key={term} className="bg-ground px-4 py-4">
               <dt className="label">{term}</dt>
-              <dd className={`num mt-1 text-2xl font-bold [font-stretch:112%] ${i === 1 ? "text-accent" : ""}`}>{value}</dd>
+              <dd className={`num mt-1 text-2xl font-bold  ${i === 1 ? "text-spec" : ""}`}>{value}</dd>
               <dd className="text-xs text-muted">{note}</dd>
             </div>
           ))}
         </dl>
       )}
 
-      <div className="mt-8">
-        <Ladder auction={auction} country={request.country} />
-      </div>
+      <Slot placement={request.placement} auction={auction} country={request.country} explainable={false} className="mt-8 max-w-3xl" />
+      <h3 className="heading mt-12 text-xl">The auction behind it</h3>
+      <Ladder auction={auction} country={request.country} className="mt-4" />
 
       <ol className="mt-10 grid gap-6 md:grid-cols-2">
         {explanation.steps.map((step, i) => (
@@ -126,13 +126,13 @@ export function Decision({ delivery, roundTripMs, fresh, running, onRun }: Props
       </ol>
 
       {next && (
-        <div className="mt-10 flex flex-col gap-4 rounded-xl bg-accent-soft p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-4 bg-panel p-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="max-w-xl">
             <span className="font-semibold">Try next. </span>
             {next.text}
           </p>
-          <button type="button" className="btn btn-ink shrink-0" disabled={running} onClick={() => onRun(next.request)}>
-            <Roll>Run it</Roll>
+          <button type="button" className="btn btn-solid shrink-0" disabled={running} onClick={() => onRun(next.request)}>
+            Run it
             <ArrowRight className="nudge size-4" aria-hidden="true" />
           </button>
         </div>
@@ -158,11 +158,11 @@ export function FirstRun({ running, onRun }: { running: boolean; onRun: (request
               type="button"
               disabled={running}
               onClick={() => onRun(s.request)}
-              className="group h-full w-full rounded-xl border border-line bg-raised p-4 text-left transition-colors hover:border-ink disabled:opacity-60"
+              className="group h-full w-full border border-line bg-ground p-4 text-left transition-colors hover:border-ink disabled:opacity-60"
             >
               <span className="block font-semibold">{s.label}</span>
               <span className="mt-1 block text-sm text-muted">{s.detail}</span>
-              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-accent">
+              <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-spec">
                 Run it{" "}
                 <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
               </span>

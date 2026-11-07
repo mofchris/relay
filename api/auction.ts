@@ -29,6 +29,10 @@ export const MATCH_FACTOR: Record<MatchKind, number> = { segment: 1.6, interest:
 
 /** Typical CTR differences between devices and placements. */
 export const DEVICE_FACTOR: Record<Device, number> = { mobile: 1.1, desktop: 1.0, tablet: 0.95, ctv: 1.2 };
+/** Sell order for a page: the slots that lift CTR most go first. */
+export const placementsByValue = () =>
+  (Object.keys(PLACEMENT_FACTOR) as Placement[]).sort((x, y) => PLACEMENT_FACTOR[y] - PLACEMENT_FACTOR[x]);
+
 export const PLACEMENT_FACTOR: Record<Placement, number> = {
   feed: 1.2,
   video: 1.3,
@@ -65,7 +69,12 @@ export function predictCtr(campaign: Campaign, request: AdRequest, match: MatchK
 }
 
 /** Run one auction for one ad request. */
-export function runAuction(request: AdRequest, campaigns: Campaign[]): AuctionResult {
+export function runAuction(
+  request: AdRequest,
+  campaigns: Campaign[],
+  /** Campaigns already shown on this page view (frequency cap: one slot each). */
+  capped: ReadonlySet<string> = new Set(),
+): AuctionResult {
   const interestWords = words(request.interests ?? "");
 
   const scored = campaigns.map((campaign) => {
@@ -74,7 +83,13 @@ export function runAuction(request: AdRequest, campaigns: Campaign[]): AuctionRe
     const relevance = predicted_ctr / campaign.base_ctr;
     const eligible = buysCountry(campaign, request);
     const score = campaign.bid_cpm * relevance;
-    const status: BidderStatus = !eligible ? "geo_excluded" : score < FLOOR_CPM ? "below_floor" : "outbid";
+    const status: BidderStatus = !eligible
+      ? "geo_excluded"
+      : capped.has(campaign.id)
+        ? "capped"
+        : score < FLOOR_CPM
+          ? "below_floor"
+          : "outbid";
     const bidder: Bidder = {
       campaign_id: campaign.id,
       advertiser: campaign.advertiser,
@@ -92,7 +107,7 @@ export function runAuction(request: AdRequest, campaigns: Campaign[]): AuctionRe
 
   // Competitors first (by score, ties broken by id so results are stable),
   // then campaigns that could not compete.
-  const rankOf = (b: Bidder) => (b.status === "outbid" ? 0 : b.status === "below_floor" ? 1 : 2);
+  const rankOf = (b: Bidder) => (b.status === "outbid" ? 0 : b.status === "below_floor" ? 1 : b.status === "capped" ? 2 : 3);
   const bidders = scored.sort(
     (a, b) => rankOf(a) - rankOf(b) || b.score - a.score || a.campaign_id.localeCompare(b.campaign_id),
   );

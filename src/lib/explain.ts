@@ -30,9 +30,11 @@ export function explain(request: Pick<AdRequest, "country">, auction: AuctionRes
   const total = auction.bidders.length;
   const excluded = auction.bidders.filter((b) => b.status === "geo_excluded");
   const weak = auction.bidders.filter((b) => b.status === "below_floor");
+  const capped = auction.bidders.filter((b) => b.status === "capped");
   const country = COUNTRY_LABELS[request.country];
 
-  const filterParts = [`${total - excluded.length} of ${total} campaigns could bid.`];
+  const filterParts = [`${total - excluded.length - capped.length} of ${total} campaigns could bid.`];
+  if (capped.length) filterParts.push(`${listAnd(capped.map((b) => b.advertiser))} already won a slot on this page.`);
   if (excluded.length) filterParts.push(`${listAnd(excluded.map((b) => b.advertiser))} ${excluded.length === 1 ? "does" : "do"} not buy ${country}.`);
   if (weak.length) filterParts.push(`${listAnd(weak.map((b) => b.advertiser))} scored under the ${usd(auction.floor_cpm)} floor.`);
   const filter = { key: "filter" as const, title: "Filter", body: filterParts.join(" ") };

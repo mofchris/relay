@@ -1,52 +1,77 @@
 @import "tailwindcss";
-@import "@fontsource-variable/archivo/wdth.css";
-@import "@fontsource/martian-mono/latin-400.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/switzer-400-normal.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/switzer-500-normal.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/switzer-600-normal.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/switzer-700-normal.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/switzer-800-normal.woff2") format("woff2");
+  font-weight: 800;
+  font-display: swap;
+}
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Palette: aluminium ground, carbon ink, one cobalt signal for "won". */
+/* An ad-ops spec sheet: white paper, black ink, magenta measurement lines.
+   Colour only arrives when a slot is sold, inside the advertisers' creatives. */
 :root {
-  --ground: #f2f4f7;
-  --raised: #ffffff;
-  --ink: #0c1222;
-  --muted: #4b5568;
-  --line: #d3d8e0;
-  --accent: #1f3bff;
-  --accent-ink: #ffffff;
-  --accent-soft: #e2e6ff;
-  --track: #e4e8ee;
-  --danger: #b42318;
+  --ground: #ffffff;
+  --ink: #0a0a0b;
+  --muted: #5c5f66;
+  --line: #e3e4e8;
+  --spec: #d6006f;
+  --spec-ink: #ffffff;
+  --hatch: #c9cbd1;
+  --panel: #f5f5f7;
   color-scheme: light;
 }
 
 .dark {
-  --ground: #090c14;
-  --raised: #101522;
-  --ink: #e8ebf2;
-  --muted: #98a1b3;
-  --line: #242c3c;
-  --accent: #7489ff;
-  --accent-ink: #090c14;
-  --accent-soft: #19214d;
-  --track: #161c2a;
-  --danger: #ff8a7a;
+  --ground: #0b0b0c;
+  --ink: #f1f1f2;
+  --muted: #9a9ca3;
+  --line: #26272b;
+  --spec: #ff4fa3;
+  --spec-ink: #0b0b0c;
+  --hatch: #34353a;
+  --panel: #141416;
   color-scheme: dark;
 }
 
 @theme inline {
   --color-ground: var(--ground);
-  --color-raised: var(--raised);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-soft: var(--accent-soft);
-  --color-track: var(--track);
-  --color-danger: var(--danger);
-  --font-sans: "Archivo Variable", "Archivo", system-ui, sans-serif;
-  --font-mono: "Martian Mono", ui-monospace, "SFMono-Regular", monospace;
-  --ease-lock: cubic-bezier(0.16, 1, 0.3, 1);
+  --color-spec: var(--spec);
+  --color-spec-ink: var(--spec-ink);
+  --color-panel: var(--panel);
+  --font-sans: "Switzer", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --ease-fill: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @layer base {
@@ -54,23 +79,21 @@
     background: var(--ground);
     color: var(--ink);
     font-family: var(--font-sans);
-    font-stretch: 100%;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
   body {
     min-height: 100svh;
-    font-size: 1rem;
+    font-size: 1.0625rem;
     line-height: 1.55;
   }
   ::selection {
-    background: var(--accent);
-    color: var(--accent-ink);
+    background: var(--spec);
+    color: var(--spec-ink);
   }
   :focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--spec);
     outline-offset: 3px;
-    border-radius: 2px;
   }
   a {
     text-underline-offset: 0.2em;
@@ -78,28 +101,34 @@
 }
 
 @layer components {
-  /* Expanded heavy display voice. */
   .display {
-    font-stretch: 125%;
-    font-weight: 800;
-    letter-spacing: -0.04em;
+    font-weight: 700;
+    letter-spacing: -0.045em;
     line-height: 0.92;
     text-wrap: balance;
   }
-  .title {
-    font-stretch: 112%;
+  .heading {
     font-weight: 700;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+  /* Spec label: the only small mono text on the site, and it always carries a measurement. */
+  .spec {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--spec);
   }
   .label {
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    letter-spacing: 0.01em;
-    color: var(--muted);
   }
   .num {
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
 
   .skip-link {
@@ -116,83 +145,77 @@
     top: 1rem;
   }
 
-  /* Buttons. The label rolls like a price tick on hover: the visible copy
-     slides up and an identical copy locks into its place. */
+  /* Buttons fill like a slot: magenta floods up from the bottom edge. */
   .btn {
     position: relative;
+    isolation: isolate;
+    overflow: hidden;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
-    min-height: 2.75rem;
-    padding: 0 1.15rem;
-    border-radius: 999px;
-    font-weight: 650;
-    font-stretch: 108%;
+    gap: 0.6rem;
+    min-height: 3rem;
+    padding: 0 1.25rem;
+    border: 1.5px solid var(--ink);
+    font-weight: 600;
     white-space: nowrap;
-    transition:
-      background-color 200ms var(--ease-lock),
-      color 200ms var(--ease-lock),
-      border-color 200ms var(--ease-lock),
-      scale 150ms var(--ease-lock);
+    transition: color 300ms var(--ease-fill), border-color 300ms var(--ease-fill), scale 120ms;
+  }
+  .btn::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--spec);
+    transform: scaleY(0);
+    transform-origin: bottom;
+    transition: transform 360ms var(--ease-fill);
+  }
+  .btn:hover::before,
+  .btn:focus-visible::before {
+    transform: scaleY(1);
+  }
+  .btn:hover,
+  .btn:focus-visible {
+    color: var(--spec-ink);
+    border-color: var(--spec);
   }
   .btn:active {
-    scale: 0.97;
+    scale: 0.98;
   }
   .btn:disabled {
     opacity: 0.55;
     cursor: progress;
   }
-  .btn-primary {
-    background: var(--accent);
-    color: var(--accent-ink);
-  }
-  .btn-ink {
+  .btn-solid {
     background: var(--ink);
     color: var(--ground);
   }
-  .btn-ghost {
-    border: 1px solid var(--line);
-    color: var(--ink);
-  }
-  .btn-ghost:hover {
-    border-color: var(--ink);
-  }
-  .roll {
-    display: inline-grid;
-    overflow: hidden;
-    line-height: 1.25;
-  }
-  .roll > span {
-    grid-area: 1 / 1;
-    transition: translate 420ms var(--ease-lock);
-  }
-  .roll > span + span {
-    translate: 0 110%;
-  }
-  :where(a, button):hover > .roll > span:first-child,
-  :where(a, button):focus-visible > .roll > span:first-child {
-    translate: 0 -110%;
-  }
-  :where(a, button):hover > .roll > span + span,
-  :where(a, button):focus-visible > .roll > span + span {
-    translate: 0 0;
-  }
   .btn svg {
-    transition: translate 300ms var(--ease-lock);
+    transition: translate 300ms var(--ease-out);
   }
-  .btn:hover svg.nudge {
-    translate: 0.2rem 0;
+  .btn:hover svg {
+    translate: 0.25rem 0;
   }
 
-  /* Form fields */
+  /* Text links that matter: the underline fills to magenta. */
+  .link {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.25em;
+    transition: color 200ms, text-decoration-color 200ms;
+  }
+  .link:hover {
+    color: var(--spec);
+  }
+
   .field {
     width: 100%;
     min-height: 2.75rem;
-    padding: 0.55rem 0.8rem;
-    border: 1px solid var(--line);
-    border-radius: 0.6rem;
-    background: var(--raised);
+    padding: 0.55rem 0.75rem;
+    border: 1.5px solid var(--line);
+    background: var(--ground);
     color: var(--ink);
     transition: border-color 150ms;
   }
@@ -200,8 +223,8 @@
     border-color: var(--muted);
   }
   .field:focus-visible {
-    outline-offset: 1px;
-    border-color: var(--accent);
+    outline-offset: 0;
+    border-color: var(--spec);
   }
   select.field {
     appearance: none;
@@ -215,81 +238,86 @@
     background-repeat: no-repeat;
   }
 
-  /* Segment chips (radio buttons) */
-  .chip {
+  /* Audience rail: square options; the chosen one is inked. */
+  .opt {
     display: inline-flex;
     align-items: center;
-    min-height: 2.25rem;
-    padding: 0 0.85rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    font-size: 0.875rem;
+    min-height: 2.5rem;
+    padding: 0 0.9rem;
+    border: 1.5px solid var(--line);
+    margin: 0 -1.5px -1.5px 0;
+    font-size: 0.9375rem;
     font-weight: 600;
     cursor: pointer;
     transition:
-      background-color 200ms var(--ease-lock),
-      border-color 200ms,
-      color 200ms,
-      translate 250ms var(--ease-lock);
+      background-color 250ms var(--ease-fill),
+      color 250ms var(--ease-fill),
+      border-color 250ms;
   }
-  .chip:hover {
+  .opt:hover {
     border-color: var(--ink);
-    translate: 0 -2px;
+    position: relative;
   }
-  .chip[aria-checked="true"],
-  .chip[aria-pressed="true"],
-  input:checked + .chip {
+  .opt[aria-checked="true"],
+  input:checked + .opt {
     background: var(--ink);
     border-color: var(--ink);
     color: var(--ground);
+    position: relative;
   }
-  input:focus-visible + .chip {
-    outline: 2px solid var(--accent);
+  input:focus-visible + .opt {
+    outline: 2px solid var(--spec);
     outline-offset: 2px;
+    position: relative;
   }
 
-  /* The ladder: ranked rows slide to their new rung, bars extend to their
-     score. Everything here is transform-only. */
+  /* Slots. Empty inventory is hatched; a sold creative wipes in over it. */
+  .hatch {
+    background-color: var(--ground);
+    background-image: repeating-linear-gradient(-45deg, var(--hatch) 0 1px, transparent 1px 7px);
+  }
+  .fill-in {
+    animation: fill-in 700ms var(--ease-fill) both;
+  }
+  .rise-in {
+    animation: rise-in 500ms var(--ease-out) both;
+  }
+
+  /* Ladder (the auction behind a slot). Transform-only motion. */
   .ladder-row {
     position: absolute;
     inset-inline: 0;
     top: 0;
-    transition:
-      translate 650ms var(--ease-lock),
-      opacity 400ms;
+    transition: translate 650ms var(--ease-out);
   }
   .ladder-bar {
     transform-origin: left center;
-    transition:
-      scale 700ms var(--ease-lock),
-      background-color 300ms;
+    transition: scale 700ms var(--ease-fill);
   }
   .ladder-mark {
-    transition: translate 700ms var(--ease-lock), opacity 300ms;
+    transition: translate 700ms var(--ease-fill);
   }
-  .hatch {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      color-mix(in srgb, var(--muted) 35%, transparent) 0 1px,
-      transparent 1px 6px
-    );
-  }
+}
 
-  .reveal {
-    animation: reveal 450ms var(--ease-lock) both;
+@keyframes fill-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 0.5rem;
   }
 }
 
 @keyframes grow {
   from {
     scale: 0 1;
-  }
-}
-
-@keyframes reveal {
-  from {
-    opacity: 0;
-    translate: 0 0.75rem;
   }
 }
 

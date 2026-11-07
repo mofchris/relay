@@ -24,7 +24,7 @@ export function Stats({ totals }: StatsProps) {
       {items.map(([term, value, note]) => (
         <div key={term}>
           <dt className="label">{term}</dt>
-          <dd className="num mt-1 text-3xl font-bold [font-stretch:115%]">{value}</dd>
+          <dd className="num mt-1 text-3xl font-bold ">{value}</dd>
           <dd className="text-xs text-muted">{note}</dd>
         </div>
       ))}
@@ -45,7 +45,7 @@ export function History({ page, state, error, selectedId, onSelect, onRetry }: H
   return (
     <section aria-labelledby="history-title">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="history-title" className="title text-2xl">
+        <h2 id="history-title" className="heading text-2xl">
           History
         </h2>
         {page && page.totals.count > page.deliveries.length && (
@@ -54,21 +54,21 @@ export function History({ page, state, error, selectedId, onSelect, onRetry }: H
       </div>
 
       {state === "error" ? (
-        <div className="mt-4 rounded-xl border border-line p-6">
+        <div className="mt-4 border border-line p-6">
           <p className="font-semibold">Your history did not load.</p>
           <p className="mt-1 text-sm text-muted">{error}</p>
-          <button type="button" className="btn btn-ghost mt-4" onClick={onRetry}>
+          <button type="button" className="btn mt-4" onClick={onRetry}>
             <RotateCw className="size-4" aria-hidden="true" /> Try again
           </button>
         </div>
       ) : state === "loading" && !page ? (
         <ul aria-label="Loading history" className="mt-4 space-y-3">
           {Array.from({ length: 4 }, (_, i) => (
-            <li key={i} className="h-14 animate-pulse rounded-lg bg-track" />
+            <li key={i} className="h-14 animate-pulse bg-panel" />
           ))}
         </ul>
       ) : !page?.deliveries.length ? (
-        <p className="mt-4 rounded-xl border border-dashed border-line p-6 text-muted">
+        <p className="mt-4 border border-dashed border-line p-6 text-muted">
           Nothing here yet. Every auction you run lands in this list, and you can reopen any of them.
         </p>
       ) : (
@@ -91,7 +91,7 @@ export function History({ page, state, error, selectedId, onSelect, onRetry }: H
                   aria-current={selected ? "true" : undefined}
                   className={cx(
                     "group grid w-full grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 px-2 py-3 text-left transition-colors md:grid-cols-[6.5rem_1fr_10rem_5rem_4.5rem] md:items-center",
-                    selected ? "bg-accent-soft" : "hover:bg-track/70",
+                    selected ? "bg-panel" : "hover:bg-panel",
                   )}
                 >
                   <span className="num order-3 text-xs text-muted md:order-none md:text-sm">{relativeDay(d.created_at)}</span>
@@ -100,7 +100,7 @@ export function History({ page, state, error, selectedId, onSelect, onRetry }: H
                     {d.request.country}
                     {d.request.interests && <> · “{d.request.interests}”</>}
                   </span>
-                  <span className={cx("order-1 truncate font-semibold md:order-none", selected && "text-accent")}>
+                  <span className={cx("order-1 truncate font-semibold md:order-none", selected && "text-spec")}>
                     {winner ? winner.advertiser : "Unfilled"}
                   </span>
                   <span className="num order-2 text-right font-mono text-xs md:order-none">

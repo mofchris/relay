@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
-import { Roll, SiteHeader, SkipLink } from "@/components/chrome";
+import { SiteHeader, SkipLink } from "@/components/chrome";
 import { messageOf } from "@/lib/api";
 import { useSession } from "@/lib/auth";
 import { useTitle } from "@/lib/useTitle";
@@ -50,7 +50,7 @@ export function SignIn() {
       <main id="main" className="mx-auto grid max-w-7xl gap-14 px-4 pt-8 pb-24 sm:px-8 lg:grid-cols-12 lg:pt-16">
         <section className="lg:col-span-6" aria-labelledby="guest-title">
           <h1 className="display text-[clamp(2.75rem,7vw,5.5rem)]">Open the console</h1>
-          <h2 id="guest-title" className="title mt-10 text-2xl">
+          <h2 id="guest-title" className="heading mt-10 text-2xl">
             Fastest: a guest sandbox
           </h2>
           <p className="mt-3 max-w-md text-muted">
@@ -58,15 +58,15 @@ export function SignIn() {
           </p>
           <button
             type="button"
-            className="btn btn-primary mt-6"
+            className="btn btn-solid mt-6"
             disabled={busy !== null}
             onClick={() => run("guest", startGuest)}
           >
-            <Roll>{busy === "guest" ? "Opening your sandbox…" : "Start as a guest"}</Roll>
+            {busy === "guest" ? "Opening your sandbox…" : "Start as a guest"}
             <ArrowRight className="nudge size-4" aria-hidden="true" />
           </button>
 
-          <h2 className="title mt-14 text-xl">What you will do there</h2>
+          <h2 className="heading mt-14 text-xl">What you will do there</h2>
           <ol className="mt-4 max-w-md divide-y divide-line border-y border-line">
             {[
               "Describe an ad slot: the audience, country, device and placement.",
@@ -83,8 +83,8 @@ export function SignIn() {
         </section>
 
         <section className="lg:col-span-5 lg:col-start-8" aria-labelledby="account-title">
-          <div className="rounded-[1.25rem] border border-line bg-raised p-6 sm:p-8">
-            <h2 id="account-title" className="title text-2xl">
+          <div className=" border border-line bg-ground p-6 sm:p-8">
+            <h2 id="account-title" className="heading text-2xl">
               {mode === "signin" ? "Sign in to an account" : "Create an account"}
             </h2>
             <p className="mt-2 text-sm text-muted">
@@ -138,13 +138,13 @@ export function SignIn() {
               </div>
 
               {error && (
-                <p role="alert" className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger">
+                <p role="alert" className=" border border-spec px-3 py-2 text-sm text-spec">
                   {error}
                 </p>
               )}
 
-              <button type="submit" className="btn btn-ink w-full" disabled={busy !== null}>
-                <Roll>{busy === "form" ? "One moment…" : mode === "signin" ? "Sign in" : "Create account"}</Roll>
+              <button type="submit" className="btn btn-solid w-full" disabled={busy !== null}>
+                {busy === "form" ? "One moment…" : mode === "signin" ? "Sign in" : "Create account"}
               </button>
             </form>
 
@@ -152,7 +152,7 @@ export function SignIn() {
               {mode === "signin" ? "No account yet? " : "Already have one? "}
               <button
                 type="button"
-                className="inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-accent hover:decoration-2"
+                className="inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-spec hover:decoration-2"
                 onClick={() => {
                   setMode(mode === "signin" ? "signup" : "signin");
                   setError(null);
@@ -171,7 +171,7 @@ export function SignIn() {
                 </p>
                 <button
                   type="button"
-                  className="mt-1 inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-accent hover:decoration-2"
+                  className="mt-1 inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-spec hover:decoration-2"
                   onClick={() => {
                     setEmail(DEMO.email);
                     setPassword(DEMO.password);

@@ -9,7 +9,7 @@ import type {
   Campaign,
   DeliveriesPage,
   Delivery,
-  PreviewResponse,
+  PageAuctionResponse,
   User,
 } from "@shared/contract.ts";
 
@@ -75,8 +75,8 @@ export const api = {
     call<AuthResponse>("POST", "/api/auth/signup", { email, password, name }),
   me: () => call<{ user: User }>("GET", "/api/me"),
   campaigns: () => call<{ campaigns: Campaign[] }>("GET", "/api/campaigns"),
-  preview: (slot: PreviewResponse["request"]) =>
-    call<PreviewResponse>("GET", `/api/auction/preview?${new URLSearchParams(slot)}`),
+  pageAuction: (query: { segment: string; device: string; country?: string }) =>
+    call<PageAuctionResponse>("GET", `/api/auction/page?${new URLSearchParams(query)}`),
   serve: (request: AdRequest) => call<Delivery>("POST", "/api/deliveries", request),
   deliveries: () => call<DeliveriesPage>("GET", "/api/deliveries"),
 };

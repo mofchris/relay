@@ -12,7 +12,6 @@ import {
   SEGMENT_LABELS,
 } from "@shared/contract.ts";
 import type { AdRequest } from "@shared/contract.ts";
-import { Roll } from "@/components/chrome";
 
 interface Props {
   value: AdRequest;
@@ -33,7 +32,7 @@ export function RequestForm({ value, onChange, onRun, running, error }: Props) {
   return (
     <form onSubmit={submit} aria-labelledby="request-title" className="space-y-6">
       <div>
-        <h2 id="request-title" className="title text-2xl">
+        <h2 id="request-title" className="heading text-2xl">
           Describe a slot
         </h2>
         <p className="mt-1 text-sm text-muted">Who is looking, and where the ad would go.</p>
@@ -41,7 +40,7 @@ export function RequestForm({ value, onChange, onRun, running, error }: Props) {
 
       <fieldset>
         <legend className="label">Audience</legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap">
           {SEGMENTS.map((s) => (
             <label key={s} className="relative">
               <input
@@ -52,7 +51,7 @@ export function RequestForm({ value, onChange, onRun, running, error }: Props) {
                 onChange={() => set("segment", s)}
                 className="peer absolute inset-0 opacity-0"
               />
-              <span className="chip">{SEGMENT_LABELS[s]}</span>
+              <span className="opt">{SEGMENT_LABELS[s]}</span>
             </label>
           ))}
         </div>
@@ -120,13 +119,13 @@ export function RequestForm({ value, onChange, onRun, running, error }: Props) {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-danger/40 px-3 py-2 text-sm text-danger">
+        <p role="alert" className=" border border-spec px-3 py-2 text-sm text-spec">
           {error}
         </p>
       )}
 
-      <button type="submit" className="btn btn-primary w-full" disabled={running}>
-        <Roll>{running ? "Running the auction…" : "Run auction"}</Roll>
+      <button type="submit" className="btn btn-solid w-full" disabled={running}>
+        {running ? "Running the auction…" : "Run auction"}
         <ArrowRight className="nudge size-4" aria-hidden="true" />
       </button>
     </form>

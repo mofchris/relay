@@ -1,7 +1,7 @@
 // HTTP API for Relay. Runs as a Cloudflare Pages Function (see
 // functions/api/[[route]].ts) and is called directly by the tests.
 
-import { runAuction } from "./auction.ts";
+import { placementsByValue, runAuction } from "./auction.ts";
 import { hashPassword, signToken, verifyPassword, verifyToken } from "./crypto.ts";
 import {
   createUser,
@@ -25,10 +25,11 @@ import {
 } from "../shared/contract.ts";
 import type {
   AdRequest,
+  Campaign,
   AuthResponse,
   DeliveriesPage,
   Delivery,
-  PreviewResponse,
+  PageAuctionResponse,
   User,
 } from "../shared/contract.ts";
 
@@ -148,17 +149,34 @@ async function login(request: Request, env: Env) {
   return json(await issue(env, publicUser(row)));
 }
 
-async function preview(url: URL, env: Env) {
+/** Sell a page's slots, most valuable first; each advertiser wins at most one. */
+function sellPage(base: AdRequest, campaigns: Campaign[]) {
+  const shown = new Set<string>();
+  const sold = new Map<string, ReturnType<typeof runAuction>>();
+  for (const placement of placementsByValue()) {
+    const auction = runAuction({ ...base, placement }, campaigns, shown);
+    if (auction.winner_id) shown.add(auction.winner_id);
+    sold.set(placement, auction);
+  }
+  return PLACEMENTS.map((placement) => ({ placement, auction: sold.get(placement)! }));
+}
+
+/** Sell every placement on one page to one visitor, without recording anything. */
+async function pageAuction(request: Request, url: URL, env: Env) {
+  const asked = url.searchParams.get("country");
+  const visitor = (request as Request & { cf?: { country?: string } }).cf?.country;
+  const country = asked ?? (isOneOf(COUNTRIES, visitor) ? visitor : "US");
   const base = parseAdRequest({
-    placement: url.searchParams.get("placement") ?? "feed",
-    device: url.searchParams.get("device") ?? "mobile",
-    country: url.searchParams.get("country") ?? "US",
-    segment: "general",
+    placement: "feed",
+    device: url.searchParams.get("device") ?? "desktop",
+    country,
+    segment: url.searchParams.get("segment") ?? "general",
   });
   const campaigns = await getCampaigns(env.DB);
-  const body: PreviewResponse = {
-    request: { placement: base.placement, device: base.device, country: base.country },
-    results: SEGMENTS.map((segment) => ({ segment, auction: runAuction({ ...base, segment }, campaigns) })),
+  const body: PageAuctionResponse = {
+    request: { device: base.device, country: base.country, segment: base.segment },
+    country_source: asked ? "chosen" : isOneOf(COUNTRIES, visitor) ? "visitor" : "default",
+    slots: sellPage(base, campaigns),
   };
   return json(body);
 }
@@ -210,7 +228,7 @@ export async function handle(request: Request, env: Env): Promise<Response> {
     if (route === "POST /api/auth/login") return await login(request, env);
     if (route === "GET /api/me") return json({ user: await requireUser(request, env) });
     if (route === "GET /api/campaigns") return json({ campaigns: await getCampaigns(env.DB) });
-    if (route === "GET /api/auction/preview") return await preview(url, env);
+    if (route === "GET /api/auction/page") return await pageAuction(request, url, env);
     if (route === "POST /api/deliveries") return await serve(request, env, startedAt);
     if (route === "GET /api/deliveries") return await history(request, env);
     const match = path.match(/^\/api\/deliveries\/([\w-]{1,64})$/);

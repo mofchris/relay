@@ -52,7 +52,8 @@ export interface Campaign {
   geos: "all" | Country[];
 }
 
-export type BidderStatus = "won" | "runner_up" | "outbid" | "below_floor" | "geo_excluded";
+/** "capped": the campaign already won another slot on the same page view. */
+export type BidderStatus = "won" | "runner_up" | "outbid" | "below_floor" | "geo_excluded" | "capped";
 
 /** How strongly a campaign matched the request. */
 export type MatchKind = "segment" | "interest" | "broad";
@@ -114,10 +115,14 @@ export interface DeliveriesPage {
   totals: DeliveryTotals;
 }
 
-/** Public, unrecorded auctions for one slot across every segment. */
-export interface PreviewResponse {
-  request: Omit<AdRequest, "segment" | "interests">;
-  results: { segment: Segment; auction: AuctionResult }[];
+/** Where the country used for a page auction came from. */
+export type CountrySource = "visitor" | "chosen" | "default";
+
+/** Public, unrecorded auctions for every placement on one page, for one visitor. */
+export interface PageAuctionResponse {
+  request: Omit<AdRequest, "placement" | "interests">;
+  country_source: CountrySource;
+  slots: { placement: Placement; auction: AuctionResult }[];
 }
 
 export type AccountKind = "member" | "guest" | "demo";

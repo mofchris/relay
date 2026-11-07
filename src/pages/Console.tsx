@@ -132,7 +132,7 @@ function ConsoleView() {
             <p className="hidden max-w-[16rem] truncate text-sm text-muted md:block">
               {user && accountLabel(user.kind, user.email)}
             </p>
-            <button type="button" className="btn btn-ghost min-h-11 px-4 text-sm" onClick={leave}>
+            <button type="button" className="btn min-h-11 px-4 text-sm" onClick={leave}>
               Sign out
             </button>
             <ThemeToggle />

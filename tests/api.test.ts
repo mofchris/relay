@@ -4,7 +4,7 @@ import { handle } from "../api/router.ts";
 import type { Env } from "../api/router.ts";
 import { pruneExpired, GUEST_TTL_HOURS } from "../api/db.ts";
 import { createTestDb } from "./d1-shim.ts";
-import type { AuthResponse, DeliveriesPage, Delivery, PreviewResponse } from "../shared/contract.ts";
+import type { AuthResponse, DeliveriesPage, Delivery, PageAuctionResponse } from "../shared/contract.ts";
 
 function setup() {
   const env: Env = { DB: createTestDb(), JWT_SECRET: "test-secret" };
@@ -114,18 +114,34 @@ test("sign up, sign in, and the shared demo account", async () => {
   assert.equal(demo.body.user.kind, "demo");
 });
 
-test("the public preview runs one auction per segment and records nothing", async () => {
+test("the public page auction sells every placement and records nothing", async () => {
   const { call, env } = setup();
-  const res = await call("GET", "/api/auction/preview?placement=video&device=ctv&country=JP");
+  const res = await call("GET", "/api/auction/page?segment=finance&device=ctv&country=JP");
   assert.equal(res.status, 200);
-  const body = res.body as PreviewResponse;
-  assert.deepEqual(body.request, { placement: "video", device: "ctv", country: "JP" });
-  assert.equal(body.results.length, 7);
-  const finance = body.results.find((r) => r.segment === "finance")!;
-  assert.equal(finance.auction.bidders.find((b) => b.campaign_id === "cmp_lumen")!.status, "geo_excluded");
+  const body = res.body as PageAuctionResponse;
+  assert.deepEqual(body.request, { device: "ctv", country: "JP", segment: "finance" });
+  assert.equal(body.country_source, "chosen");
+  assert.deepEqual(body.slots.map((s) => s.placement), ["feed", "sidebar", "banner", "interstitial", "video"]);
+  for (const slot of body.slots) {
+    assert.equal(slot.auction.bidders.find((b) => b.campaign_id === "cmp_lumen")!.status, "geo_excluded");
+  }
   const rows = await env.DB.prepare("SELECT COUNT(*) AS n FROM deliveries").first<{ n: number }>();
   assert.equal(rows!.n, 0);
-  assert.equal((await call("GET", "/api/auction/preview?country=XX")).status, 400);
+
+  // Frequency cap: no advertiser fills two slots on one page.
+  const us = (await call("GET", "/api/auction/page?segment=gaming&country=US")).body as PageAuctionResponse;
+  const winners = us.slots.map((s) => s.auction.winner_id).filter(Boolean);
+  assert.equal(new Set(winners).size, winners.length);
+  assert.equal(winners.length, 5);
+  // Video sells first, so the gaming campaign takes it; later slots list Helix as capped.
+  assert.equal(us.slots.find((s) => s.placement === "video")!.auction.winner_id, "cmp_helix");
+  const banner = us.slots.find((s) => s.placement === "banner")!.auction;
+  assert.equal(banner.bidders.find((b) => b.campaign_id === "cmp_helix")!.status, "capped");
+
+  const fallback = (await call("GET", "/api/auction/page")).body as PageAuctionResponse;
+  assert.equal(fallback.request.country, "US");
+  assert.equal(fallback.country_source, "default");
+  assert.equal((await call("GET", "/api/auction/page?segment=pets")).status, 400);
 });
 
 test("expired guest sandboxes are pruned with their history", async () => {
