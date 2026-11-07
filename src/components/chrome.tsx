@@ -47,11 +47,15 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="grid size-11 place-items-center rounded-full border border-line transition-colors hover:border-ink"
+      className="group grid size-11 place-items-center rounded-full border border-line transition-colors hover:border-ink"
       aria-label={`Switch to ${next} theme`}
       title={`Switch to ${next} theme`}
     >
-      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      {theme === "dark" ? (
+        <Sun className="size-4 transition-transform duration-500 ease-(--ease-lock) group-hover:rotate-90" />
+      ) : (
+        <Moon className="size-4 transition-transform duration-500 ease-(--ease-lock) group-hover:-rotate-[20deg]" />
+      )}
     </button>
   );
 }
@@ -94,12 +98,12 @@ export function SiteFooter() {
     <footer className="mt-24 border-t border-line">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-8 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="display text-[clamp(3.5rem,14vw,10rem)] leading-[0.8]" aria-hidden="true">
+          <p className="display pb-[0.14em] text-[clamp(3.5rem,14vw,10rem)] leading-[0.85]" aria-hidden="true">
             Relay
           </p>
-          <p className="mt-6 max-w-md text-sm text-muted">
+          <p className="mt-4 max-w-md text-sm text-muted">
             A portfolio project by{" "}
-            <a className="font-semibold text-ink underline" href={AUTHOR_URL}>
+            <a className="inline-block py-1 font-semibold text-ink underline" href={AUTHOR_URL}>
               Christopher Mofunanya
             </a>
             . The advertisers and their bids are made up; the auction, accounts and history are real.
@@ -107,17 +111,17 @@ export function SiteFooter() {
         </div>
         <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold">
           <li>
-            <a className="text-muted underline-offset-4 hover:text-ink hover:underline" href={SOURCE_URL}>
+            <a className="inline-block py-2 text-muted underline-offset-4 hover:text-ink hover:underline" href={SOURCE_URL}>
               Source on GitHub
             </a>
           </li>
           <li>
-            <Link className="text-muted underline-offset-4 hover:text-ink hover:underline" to="/console">
+            <Link className="inline-block py-2 text-muted underline-offset-4 hover:text-ink hover:underline" to="/console">
               Console
             </Link>
           </li>
           <li>
-            <a className="text-muted underline-offset-4 hover:text-ink hover:underline" href={`${SOURCE_URL}#readme`}>
+            <a className="inline-block py-2 text-muted underline-offset-4 hover:text-ink hover:underline" href={`${SOURCE_URL}#readme`}>
               How it's built
             </a>
           </li>

@@ -65,6 +65,21 @@ export function SignIn() {
             <Roll>{busy === "guest" ? "Opening your sandbox…" : "Start as a guest"}</Roll>
             <ArrowRight className="nudge size-4" aria-hidden="true" />
           </button>
+
+          <h2 className="title mt-14 text-xl">What you will do there</h2>
+          <ol className="mt-4 max-w-md divide-y divide-line border-y border-line">
+            {[
+              "Describe an ad slot: the audience, country, device and placement.",
+              "Run the auction on the server and read the bid ladder.",
+              "See why the winner won and how its price was set.",
+              "Reopen any earlier run from your history.",
+            ].map((step, i) => (
+              <li key={step} className="flex gap-4 py-3">
+                <span className="num font-mono text-xs leading-6 text-muted">{i + 1}</span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
         </section>
 
         <section className="lg:col-span-5 lg:col-start-8" aria-labelledby="account-title">
@@ -137,7 +152,7 @@ export function SignIn() {
               {mode === "signin" ? "No account yet? " : "Already have one? "}
               <button
                 type="button"
-                className="font-semibold text-ink underline underline-offset-4"
+                className="inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-accent hover:decoration-2"
                 onClick={() => {
                   setMode(mode === "signin" ? "signup" : "signin");
                   setError(null);
@@ -156,7 +171,7 @@ export function SignIn() {
                 </p>
                 <button
                   type="button"
-                  className="mt-2 font-semibold text-ink underline underline-offset-4"
+                  className="mt-1 inline-block py-1 font-semibold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-accent hover:decoration-2"
                   onClick={() => {
                     setEmail(DEMO.email);
                     setPassword(DEMO.password);

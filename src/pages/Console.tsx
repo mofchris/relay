@@ -46,6 +46,7 @@ function ConsoleView() {
   const [freshId, setFreshId] = useState<string | null>(null);
   const [roundTrips, setRoundTrips] = useState<Record<string, number>>({});
   const decisionRef = useRef<HTMLDivElement>(null);
+  const formTouched = useRef(false);
 
   const leave = useCallback(() => {
     signOut();
@@ -67,6 +68,8 @@ function ConsoleView() {
       .then((p) => {
         if (!active) return;
         setPage(p);
+        // Start the form from the slot on screen, so the two always agree.
+        if (p.deliveries[0]) setForm((f) => (formTouched.current ? f : p.deliveries[0].request));
         setHistoryState("ready");
       })
       .catch((e) => {
@@ -86,8 +89,13 @@ function ConsoleView() {
     requestAnimationFrame(() => decisionRef.current?.scrollIntoView({ block: "start", behavior: smooth ? "smooth" : "auto" }));
   };
 
+  const editForm = (next: AdRequest) => {
+    formTouched.current = true;
+    setForm(next);
+  };
+
   async function run(request: AdRequest) {
-    setForm(request);
+    editForm(request);
     setRunning(true);
     setRunError(null);
     const started = performance.now();
@@ -136,7 +144,7 @@ function ConsoleView() {
         <h1 className="sr-only">Relay console</h1>
         <div className="grid gap-12 lg:grid-cols-[22rem_1fr] xl:grid-cols-[24rem_1fr] xl:gap-16">
           <aside className="lg:sticky lg:top-6 lg:self-start">
-            <RequestForm value={form} onChange={setForm} onRun={run} running={running} error={runError} />
+            <RequestForm value={form} onChange={editForm} onRun={run} running={running} error={runError} />
           </aside>
 
           <div ref={decisionRef} className="min-w-0 scroll-mt-4" aria-live="polite" aria-busy={running}>
@@ -168,6 +176,8 @@ function ConsoleView() {
             selectedId={selected?.id ?? null}
             onSelect={(id) => {
               setSelectedId(id);
+              const picked = deliveries.find((d) => d.id === id);
+              if (picked) editForm(picked.request);
               reveal(true);
             }}
             onRetry={() => {

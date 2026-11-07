@@ -229,10 +229,12 @@
     transition:
       background-color 200ms var(--ease-lock),
       border-color 200ms,
-      color 200ms;
+      color 200ms,
+      translate 250ms var(--ease-lock);
   }
   .chip:hover {
     border-color: var(--ink);
+    translate: 0 -2px;
   }
   .chip[aria-checked="true"],
   .chip[aria-pressed="true"],
@@ -274,7 +276,7 @@
   }
 
   .reveal {
-    animation: reveal 600ms var(--ease-lock) both;
+    animation: reveal 450ms var(--ease-lock) both;
   }
 }
 

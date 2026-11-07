@@ -95,10 +95,10 @@ export function Ladder({ auction, country, rowRem = 3.25, className }: LadderPro
                 {!out && (
                   <div
                     className={cx(
-                      "ladder-bar absolute inset-0 animate-[grow_900ms_var(--ease-lock)_backwards]",
+                      "ladder-bar absolute inset-0 animate-[grow_650ms_var(--ease-lock)_backwards]",
                       won ? "bg-accent" : b.status === "runner_up" ? "bg-ink/70" : "bg-muted/45",
                     )}
-                    style={{ scale: `${scale(b.score)} 1`, animationDelay: `${i * 45}ms` }}
+                    style={{ scale: `${scale(b.score)} 1`, animationDelay: `${i * 35}ms` }}
                   />
                 )}
               </div>

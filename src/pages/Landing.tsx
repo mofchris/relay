@@ -244,7 +244,10 @@ function HowItWorks() {
         <ol className="mt-14 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((step, i) => (
             <li key={step.title} className="border-t-2 border-ink pt-5">
-              <p className="num font-mono text-sm text-muted">{i + 1}</p>
+              <div className="flex items-start justify-between gap-4">
+                <p className="num font-mono text-sm text-muted">{i + 1}</p>
+                <StepGlyph step={i} />
+              </div>
               <h3 className="title mt-6 text-2xl">{step.title}</h3>
               <p className="mt-3 text-muted">{step.body}</p>
             </li>
@@ -252,6 +255,38 @@ function HowItWorks() {
         </ol>
       </div>
     </section>
+  );
+}
+
+type GlyphRow = { width: number; kind: "win" | "bar" | "out" };
+
+const GLYPHS: GlyphRow[][] = [
+  // Filter: one campaign sits out.
+  [{ width: 80, kind: "bar" }, { width: 100, kind: "out" }, { width: 55, kind: "bar" }],
+  // Score: bars take their lengths, the top one wins.
+  [{ width: 95, kind: "win" }, { width: 62, kind: "bar" }, { width: 38, kind: "bar" }],
+  // Price: the same ladder, with the marker at the runner-up's score.
+  [{ width: 95, kind: "win" }, { width: 62, kind: "bar" }, { width: 38, kind: "bar" }],
+  // Record: rows of history.
+  [{ width: 95, kind: "win" }, { width: 95, kind: "bar" }, { width: 95, kind: "bar" }],
+];
+
+/** A three-row ladder drawn in the terms of one step. */
+function StepGlyph({ step }: { step: number }) {
+  return (
+    <div aria-hidden="true" className="relative w-24 space-y-1.5">
+      {GLYPHS[step].map((row, i) => (
+        <div key={i} className={cx("h-2 rounded-[2px]", row.kind === "out" ? "hatch" : "bg-track")}>
+          {row.kind !== "out" && (
+            <div
+              className={cx("h-full rounded-[2px]", row.kind === "win" ? "bg-accent" : "bg-muted/50")}
+              style={{ width: `${row.width}%` }}
+            />
+          )}
+        </div>
+      ))}
+      {step === 2 && <div className="absolute -top-1 -bottom-1 left-[62%] border-l-2 border-ink" />}
+    </div>
   );
 }
 
