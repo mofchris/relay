@@ -26,7 +26,7 @@ function AdBadge({ fg }: { fg: string }) {
       <span className="border px-1 py-0.5" style={{ borderColor: fg }}>
         Ad
       </span>
-      <span className="opacity-75">Fictional advertiser</span>
+      <span>Fictional advertiser</span>
     </span>
   );
 }

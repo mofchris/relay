@@ -101,7 +101,7 @@ export function SiteFooter() {
           <Wordmark />
           <p className="mt-5 max-w-md text-muted">
             A portfolio project by{" "}
-            <a className="link text-ink" href={AUTHOR_URL}>
+            <a className="link inline-block py-0.5 text-ink" href={AUTHOR_URL}>
               Christopher Mofunanya
             </a>
             . The advertisers and their ads are made up. The auctions, accounts and history are real.
