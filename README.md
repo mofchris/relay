@@ -1,13 +1,16 @@
 # Relay
 
-**An ad server you can watch think.** Describe an ad slot and who is looking at it. Relay runs a
-second-price auction on the server between six fictional advertisers, then shows every bidder's score,
-who won, what they paid and how the price was worked out.
+**An ad server you can watch think.** When you open the site, its five ad slots are auctioned on the
+server to six fictional advertisers and filled with the winners' ads, each with a receipt. In the console
+you describe a slot yourself and see every bidder's score, who won, what they paid and how the price
+was worked out.
 
 **Live:** https://relay-auction.pages.dev. Click **Run your own auctions** for a private guest
 sandbox (no sign-up), or sign in with the shared demo account `demo@relay.dev` / `demo1234`.
 
-![The Relay console explaining one auction](docs/console.png)
+![The landing page: five ad slots sold live to fictional advertisers](docs/landing.png)
+
+![The console explaining one auction](docs/console.png)
 
 ## What's real and what's made up
 
@@ -28,6 +31,9 @@ sandbox (no sign-up), or sign in with the shared demo account `demo@relay.dev` /
 4. **Price.** The winner pays the lowest bid that would still have beaten the runner-up's score (or the
    floor, if there is no runner-up), plus $0.01, and never more than its own bid. This is a
    generalised second-price auction.
+
+On the landing page the slots are sold most-valuable first, and each advertiser can win at most one
+slot per page view (a frequency cap); capped bidders show up on that slot's ladder.
 
 The engine is [`api/auction.ts`](api/auction.ts). Its tests check the pricing rules against every
 possible request.
@@ -72,7 +78,7 @@ Cloudflare Pages
 
 | Route | Auth | Does |
 | --- | --- | --- |
-| `GET /api/auction/preview?placement&device&country` | no | Runs one auction per audience segment without recording anything (powers the landing page) |
+| `GET /api/auction/page?segment&device&country` | no | Sells all five placements for one reader, with the frequency cap, without recording anything (powers the landing page). Country defaults to the visitor's, via Cloudflare |
 | `GET /api/campaigns` | no | The advertiser catalog |
 | `POST /api/auth/guest` | no | Creates a private guest sandbox |
 | `POST /api/auth/signup`, `POST /api/auth/login` | no | Email and password accounts |
