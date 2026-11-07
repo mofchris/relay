@@ -6,10 +6,12 @@
     "module": "esnext",
     "types": ["vite/client"],
     "skipLibCheck": true,
+    "strict": true,
 
     /* Path aliases */
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["./shared/*"]
     },
 
     /* Bundler mode */
@@ -26,5 +28,5 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"]
+  "include": ["src", "shared"]
 }

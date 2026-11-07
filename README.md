@@ -1,224 +1,101 @@
-# Relay — Real-Time Ad Delivery & Analytics
+# Relay
 
-Relay is a real-time ad delivery and analytics platform: it serves targeted ads in
-single-digit milliseconds and measures every impression as it happens. This is a
-full-stack demo — a React web app plus an API server with real accounts, a database,
-and a server-side ad auction — so you can run the whole flow from sign-up to serving
-ads and watching the analytics update.
+**An ad server you can watch think.** When you open the site, its five ad slots are auctioned on the
+server to six fictional advertisers and filled with the winners' ads, each with a receipt. In the console
+you describe a slot yourself and see every bidder's score, who won, what they paid and how the price
+was worked out.
 
-> Portfolio / demo project. Advertisers, campaigns and traffic are fictional, and the
-> Kafka/Redis/BigQuery pipeline flags are illustrative (the auction and persistence are
-> real; the streaming infra is represented, not run).
+**Live:** https://relay-auction.pages.dev. Click **Run your own auctions** for a private guest
+sandbox (no sign-up), or sign in with the shared demo account `demo@relay.dev` / `demo1234`.
 
-![Landing page](docs/landing.png)
+![The landing page: five ad slots sold live to fictional advertisers](docs/landing.png)
 
----
+![The console explaining one auction](docs/console.png)
 
-## Contents
+## What's real and what's made up
 
-- [What it does](#what-it-does)
-- [Screenshots](#screenshots)
-- [Architecture](#architecture)
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-- [Demo script (sign-up to serving ads)](#demo-script-sign-up-to-serving-ads)
-- [Project structure](#project-structure)
-- [Configuration](#configuration)
-- [API](#api)
-- [License](#license)
-
----
-
-## What it does
-
-The product idea: a backend platform that **delivers targeted ads and tracks campaign
-performance in real time**, built on distributed, event-driven infrastructure (Go,
-Python, Kafka, Redis, PostgreSQL, BigQuery, Kubernetes, Docker).
-
-This repo implements a working slice of that:
-
-- **Accounts** — sign up, sign in, or use a one-click demo account (JWT auth, bcrypt
-  password hashing).
-- **Real-time decisioning** — each ad request runs a second-price auction across
-  eligible campaigns on the server and returns a winner in single-digit milliseconds.
-- **Audience targeting** — matches on segment, geo, device, placement, and free-text
-  interest signals, with per-campaign geo eligibility.
-- **Streaming analytics** — every delivery is persisted and the console's KPIs
-  (requests served, fill rate, average latency, estimated revenue) update live.
-- **Pipeline visibility** — each decision reports its downstream side-effects: Redis
-  cache hit/miss, streamed to Kafka, logged to BigQuery.
-
-## Screenshots
-
-| Sign in / sign up | Ad Delivery Console |
+| Real | Made up |
 | --- | --- |
-| ![Auth](docs/auth.png) | ![Console](docs/console.png) |
+| The auction: it runs in a Cloudflare Worker on every request, and it's deterministic (the same request always gets the same result) | The six advertisers, their bids, headlines and usual click rates |
+| Accounts, with PBKDF2-SHA256 password hashing and HS256 session tokens | The traffic: every request is one somebody typed in. No ad is shown and no money moves |
+| Delivery history, stored in Cloudflare D1 | The device and placement factors behind relevance (fixed estimates, not learned) |
+| Timings: server time is measured by the Worker, round trip by your browser | |
+
+## How an auction is decided
+
+1. **Filter.** Campaigns that don't buy the request's country sit out.
+2. **Score.** Each bid is weighted by relevance, the predicted click-through rate divided by the
+   campaign's usual one. The prediction comes from audience match (segment, interest keyword or none),
+   device and placement. `score = bid × relevance`.
+3. **Rank.** The highest score wins. A score under the $0.50 floor can't win.
+4. **Price.** The winner pays the lowest bid that would still have beaten the runner-up's score (or the
+   floor, if there is no runner-up), plus $0.01, and never more than its own bid. This is a
+   generalised second-price auction.
+
+On the landing page the slots are sold most-valuable first, and each advertiser can win at most one
+slot per page view (a frequency cap); capped bidders show up on that slot's ladder.
+
+The engine is [`api/auction.ts`](api/auction.ts). Its tests check the pricing rules against every
+possible request.
+
+## Run it locally
+
+Needs Node.js 22.18 or newer.
+
+```bash
+npm run setup   # install, create .dev.vars, apply the D1 migration locally
+npm run dev     # app on http://localhost:5173, API on :8788
+```
+
+```bash
+npm run check   # lint, tests, type-check and production build
+```
 
 ## Architecture
 
-Two parts in this repo:
-
 ```
-Browser (React, Vite)  ──HTTP/JSON + JWT──►  API server (Express)
-   /  /auth  /app                               │
-                                                ├─ auth  (signup / login / demo)
-                                                ├─ serve (real-time auction)
-                                                └─ deliveries (history)
-                                                       │
-                                                  SQLite (node:sqlite)
-                                            users · campaigns · deliveries
+Browser ── React 19 + TypeScript + Vite (src/)
+   │  same-origin /api/* calls, Bearer token
+   ▼
+Cloudflare Pages
+   ├─ static app (dist/)
+   └─ Pages Function  functions/api/[[route]].ts ─► api/router.ts
+                                                     ├─ api/auction.ts   the auction, pure
+                                                     ├─ api/crypto.ts    PBKDF2 + JWT on Web Crypto
+                                                     └─ api/db.ts        queries
+                                                            ▼
+                                                     Cloudflare D1 (SQLite)
+                                                     users · campaigns · deliveries
 ```
 
-- The **frontend** (`/src`) handles routing, the marketing site, auth screens, and the
-  Ad Delivery Console. `/app` is gated behind sign-in.
-- The **API server** (`/server`) owns accounts, the campaign catalog, the auction
-  engine, and delivery history. It uses Node's built-in SQLite driver, so there is
-  **no external database to install** — the `.db` file is created and seeded on first run.
-- Auth is a JWT stored in the browser and sent as a Bearer token on protected calls.
+- `shared/contract.ts` holds the request and response types both sides use.
+- `migrations/` creates the schema and seeds the advertisers and the demo account.
+- Guest sandboxes are deleted after 72 hours. History on the shared demo account is kept for 7 days.
+- Worker clocks only advance during I/O, so "server time" mostly measures the D1 reads. The auction
+  itself takes well under a millisecond.
 
-## Tech stack
+### API
 
-**Frontend**
-- React 19 + TypeScript, Vite
-- Tailwind CSS v4 (`radix-nova` shadcn style), @efferd UI blocks
-- React Router, next-themes (light/dark), Motion, lucide-react, Geist
+| Route | Auth | Does |
+| --- | --- | --- |
+| `GET /api/auction/page?segment&device&country` | no | Sells all five placements for one reader, with the frequency cap, without recording anything (powers the landing page). Country defaults to the visitor's, via Cloudflare |
+| `GET /api/campaigns` | no | The advertiser catalog |
+| `POST /api/auth/guest` | no | Creates a private guest sandbox |
+| `POST /api/auth/signup`, `POST /api/auth/login` | no | Email and password accounts |
+| `GET /api/me` | yes | The signed-in account |
+| `POST /api/deliveries` | yes | Runs an auction for an ad request and records it |
+| `GET /api/deliveries`, `GET /api/deliveries/:id` | yes | History and totals |
 
-**Backend**
-- Node.js 22+ with the built-in `node:sqlite` database (zero native deps)
-- Express, JSON Web Tokens, bcrypt (`bcryptjs`)
+## Deploy
 
-The broader platform targets Go/Python services with Kafka, Redis, PostgreSQL and
-BigQuery on Kubernetes; this demo represents that pipeline rather than running it.
-
-## Getting started
-
-Prerequisites: **Node.js 22.5+** and npm (Node 22.5+ is required for `node:sqlite`).
+Everything runs on Cloudflare's free tier: Pages for the app and functions, and D1 for the data.
 
 ```bash
-npm run setup    # installs both the web app and the server
-npm run dev      # runs the web app (http://localhost:5173) and API (http://localhost:8787)
+npx wrangler d1 migrations apply relay --remote   # once, and after adding a migration
+npx wrangler pages secret put JWT_SECRET --project-name relay-auction
+npm run deploy                                     # check, then deploy dist/ and functions/
 ```
-
-Then open http://localhost:5173 and either create an account or use the demo account:
-
-```
-email:    demo@relay.dev
-password: demo1234
-```
-
-Run the two processes separately if you prefer:
-
-```bash
-npm run dev:web      # frontend only
-npm run dev:server   # API only
-```
-
-Build / preview the frontend:
-
-```bash
-npm run build        # type-checks (tsc) and bundles to dist/
-npm run preview
-```
-
-## Demo script (sign-up to serving ads)
-
-1. **Landing** ( `/` ) — scroll (the header stays pinned), toggle light/dark, then click
-   **Sign In** or **Open console**.
-2. **Sign up / sign in** ( `/auth` ) — create an account with email + password, click a
-   social button for the one-click demo account, or sign in with `demo@relay.dev` /
-   `demo1234`. New accounts start with empty analytics; the demo account comes with
-   seeded history.
-3. **Ad Delivery Console** ( `/app` ) — choose a targeting context (placement, device,
-   country, segment, optional interests) and click **Serve an ad**. Inspect the winning
-   campaign, the second-price clearing CPM, the predicted CTR, the latency, the decision
-   trace, and the Redis/Kafka/BigQuery flags. The KPI strip and **Recent deliveries**
-   update on every serve, and persist (they are stored server-side per account).
-   - Click any item in **Recent deliveries** to inspect that delivery's decision and
-     metrics, with a comparison of its clearing CPM, CTR, and latency against the
-     average for its audience segment.
-4. **Sign out** from the console header; visiting `/app` again redirects to `/auth`.
-
-Things to try:
-- Segment **Gaming** → *Helix Gaming* tends to win; **Finance** in the **US** →
-  *Lumen Finance* competes; **Finance** in **Japan** → Lumen is geo-restricted, so a
-  different ad wins (geo targeting).
-- Serve several requests, reload, sign out and back in — history persists per account.
-
-## Project structure
-
-```
-.
-├── src/                         # React frontend
-│   ├── App.tsx                  # routes + RequireAuth guard for /app
-│   ├── pages/                   # landing-page, console-page
-│   ├── components/              # hero, features, auth-page, console widgets, ui/
-│   └── lib/
-│       ├── api.ts               # HTTP client (auth + serving)
-│       ├── auth.tsx             # AuthProvider / useAuth
-│       └── types.ts             # shared request/response contract
-└── server/                      # API server
-    └── src/
-        ├── index.js             # Express app + routes
-        ├── db.js                # node:sqlite schema + seed (campaigns, demo data)
-        └── auction.js           # second-price decisioning engine
-```
-
-## Configuration
-
-Frontend (`.env.local`, optional):
-
-| Variable       | Default                 | Effect                                   |
-| -------------- | ----------------------- | ---------------------------------------- |
-| `VITE_API_URL` | `http://localhost:8787` | Base URL of the API server.              |
-
-Server (environment variables, all optional — see `server/.env.example`):
-
-| Variable      | Default                    | Effect                          |
-| ------------- | -------------------------- | ------------------------------- |
-| `PORT`        | `8787`                     | API port.                       |
-| `CORS_ORIGIN` | `http://localhost:5173`    | Allowed browser origin.         |
-| `JWT_SECRET`  | dev placeholder            | Token signing secret (set this in production). |
-| `DB_PATH`     | `server/relay.db`          | SQLite file location.           |
-
-## API
-
-| Method & path              | Auth | Body / returns                       |
-| -------------------------- | ---- | ------------------------------------ |
-| `POST /api/auth/signup`    | no   | `{email,password,name?}` → `{token,user}` |
-| `POST /api/auth/login`     | no   | `{email,password}` → `{token,user}`  |
-| `POST /api/auth/demo`      | no   | → `{token,user}` (shared demo account) |
-| `GET  /api/me`             | yes  | → `{user}`                           |
-| `POST /api/serve`          | yes  | `AdRequest` → `DeliveryResponse`     |
-| `GET  /api/deliveries`     | yes  | → `SavedDeliveryRecord[]`            |
-| `GET  /api/deliveries/:id` | yes  | → `SavedDeliveryRecord`             |
-
-Request/response shapes are defined in `src/lib/types.ts`.
-
-## Deployment
-
-The frontend is hosted on **GitHub Pages** and the API on **Render** (both free tier).
-GitHub Pages can only serve static files, so the Node + SQLite API runs on Render.
-
-**Frontend — GitHub Pages**
-- `.github/workflows/deploy-pages.yml` builds with `base=/relay/` and deploys on every push
-  to `main`. Enable it once: repo **Settings → Pages → Source: GitHub Actions**.
-- Served at `https://mofchris.github.io/relay/`.
-
-**API — Render**
-- `render.yaml` defines the API service. In Render: **New → Blueprint → pick this repo → Apply**.
-- Render builds and runs `/server`. The free tier has no persistent disk, so SQLite re-seeds on
-  each deploy (the demo account and seeded history always come back), and the service sleeps
-  after ~15 min idle (first request then takes ~30s to wake).
-
-**Wire them together**
-1. Deploy the API on Render and copy its URL (e.g. `https://relay-api.onrender.com`).
-2. Repo **Settings → Secrets and variables → Actions → Variables** → add `VITE_API_URL` set to
-   that Render URL.
-3. Re-run the Pages workflow (**Actions → Deploy frontend to GitHub Pages → Run workflow**) so
-   the frontend is built against the live API.
-4. The API already allows the Pages origin (`CORS_ORIGIN=https://mofchris.github.io`).
 
 ## License
 
-MIT — see [LICENSE](LICENSE). Advertisers, campaigns and metrics are fictional, for
-demonstration only.
+MIT. See [LICENSE](LICENSE).
