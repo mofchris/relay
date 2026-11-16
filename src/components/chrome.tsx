@@ -106,6 +106,22 @@ export function SiteFooter() {
             </a>
             . The advertisers and their ads are made up. The auctions, accounts and history are real.
           </p>
+          {/* The author's sign-off, set exactly as on his portfolio. */}
+          <p
+            className="mt-6 text-muted"
+            style={{
+              fontFamily: '"Archivo", sans-serif',
+              fontStretch: "125%",
+              fontWeight: 700,
+              fontSize: "11px",
+              lineHeight: 1,
+              letterSpacing: ".28em",
+              marginRight: "-.28em",
+              textTransform: "uppercase",
+            }}
+          >
+            Built with intention.
+          </p>
         </div>
         <ul className="flex flex-col gap-1 md:col-span-3 md:col-start-10">
           {[
