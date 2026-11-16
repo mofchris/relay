@@ -1,17 +1,41 @@
-import path from "path"
+import path from "node:path"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
+import type { Plugin } from "vite"
 
-// https://vite.dev/config/
-// `base` is "/" for local dev; the GitHub Pages build sets VITE_BASE=/relay/
-// so assets resolve under the project-pages path.
+/** Preload the Latin display font so headlines do not reflow when it arrives. */
+function preloadDisplayFont(): Plugin {
+  return {
+    name: "relay:preload-display-font",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, ctx) {
+        const file = Object.keys(ctx.bundle ?? {}).find((f) => /archivo-latin-wdth-normal-[\w-]+\.woff2$/.test(f))
+        if (!file) return []
+        return [
+          {
+            tag: "link",
+            attrs: { rel: "preload", href: `/${file}`, as: "font", type: "font/woff2", crossorigin: "" },
+            injectTo: "head-prepend",
+          },
+        ]
+      },
+    },
+  }
+}
+
+// In development the API runs under `wrangler pages dev` on :8788 (see
+// `npm run dev`); Vite forwards /api to it so the app always calls same-origin.
 export default defineConfig({
-  base: process.env.VITE_BASE ?? "/",
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), preloadDisplayFont()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
+      "@shared": path.resolve(import.meta.dirname, "./shared"),
     },
+  },
+  server: {
+    proxy: { "/api": "http://127.0.0.1:8788" },
   },
 })

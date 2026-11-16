@@ -1,0 +1,10 @@
+# Cloudflare Pages project: the static app in dist/ plus the API in functions/.
+name = "relay-auction"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "relay"
+database_id = "0b74aaf5-486b-401d-be0c-6cc0e37121d1"
+migrations_dir = "migrations"

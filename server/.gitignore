@@ -1,7 +1,0 @@
-node_modules
-# SQLite database files (created and seeded at runtime)
-*.db
-*.db-shm
-*.db-wal
-.env
-.env.local

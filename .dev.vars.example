@@ -1,0 +1,2 @@
+# Local secrets for `wrangler pages dev`. Copied to .dev.vars by `npm run setup`.
+JWT_SECRET=local-development-secret

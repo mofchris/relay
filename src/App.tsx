@@ -1,42 +1,25 @@
-import type { ReactNode } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { LandingPage } from "@/pages/landing-page";
-import { AuthPage } from "@/components/auth-page";
-import { ConsolePage } from "@/pages/console-page";
-import { useAuth } from "@/lib/auth";
+import { Suspense, lazy } from "react";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Landing } from "@/pages/Landing";
 
-/** Gate a route behind sign-in; redirect to /auth when signed out. */
-function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) {
-    return <div className="grid min-h-svh place-items-center text-sm text-muted-foreground">Loading…</div>;
-  }
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  return children;
-}
-
-// Vite injects BASE_URL ("/" in dev, "/relay/" for the Pages build); React
-// Router needs it without a trailing slash so deep links resolve correctly.
-const basename = import.meta.env.BASE_URL.replace(/\/+$/, "");
+const SignIn = lazy(() => import("@/pages/SignIn").then((m) => ({ default: m.SignIn })));
+const Console = lazy(() => import("@/pages/Console").then((m) => ({ default: m.Console })));
+const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })));
 
 export default function App() {
   return (
-    <BrowserRouter basename={basename}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route
-          path="/app"
-          element={
-            <RequireAuth>
-              <ConsolePage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    <BrowserRouter>
+      <Suspense fallback={<div className="min-h-svh" />}>
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/console" element={<Console />} />
+          {/* Old paths from earlier versions of the app. */}
+          <Route path="/auth" element={<Navigate to="/signin" replace />} />
+          <Route path="/app" element={<Navigate to="/console" replace />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }
